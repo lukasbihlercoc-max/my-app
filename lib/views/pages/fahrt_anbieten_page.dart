@@ -210,7 +210,7 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                             final userData = UserService().getCurrentUser();
 
                             final neueFahrt = FahrtDaten.fromTimeOfDay(
-                              eventId: widget.event.id,
+                              eventId: widget.event.stabileId,
                               eventName: widget.event.name,
                               standort: widget.event.standort,
                               abfahrtsort: abfahrtsort,
@@ -224,6 +224,9 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                               ownerId: userData['id']!,
                               ownerName: userData['name']!,
                             );
+                            
+                            //Debug-Ausgabe der stabilen Event ID
+                            print("🆕 DEBUG: Fahrt erstellt für Event ID: ${widget.event.stabileId}");
 
                             
                             FahrtService().addFahrt(neueFahrt);

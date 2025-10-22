@@ -198,14 +198,17 @@ TextFormField(
                           name: NameController.text,
                           datum: parsedDate,
                           standort: standortController.text.isNotEmpty
-                            ? standortController.text 
-                            : "Unbekannt",
+                              ? standortController.text
+                              : "Unbekannt",
                           typ: typ.toString(),
                           beschreibung: beschreibungController.text,
                           adresse: adresseController.text.trim().isNotEmpty
-                            ? adresseController.text.trim()
-                            : "Adresse nicht angegeben",
+                              ? adresseController.text.trim()
+                              : "Adresse nicht angegeben",
                         );
+                        
+                        //Debug-Ausgabe der stabilen ID
+                        print("🆕 DEBUG: Event erstellt mit stabiler ID: ${newEvent.stabileId}");
                     
                         await speichereEvent(newEvent);
                     

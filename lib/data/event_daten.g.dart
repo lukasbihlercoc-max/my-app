@@ -30,8 +30,6 @@ class EventAdapter extends TypeAdapter<Event> {
   void write(BinaryWriter writer, Event obj) {
     writer
       ..writeByte(7)
-      ..writeByte(0)
-      ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
@@ -43,7 +41,9 @@ class EventAdapter extends TypeAdapter<Event> {
       ..writeByte(5)
       ..write(obj.beschreibung)
       ..writeByte(6)
-      ..write(obj.adresse);
+      ..write(obj.adresse)
+      ..writeByte(0)
+      ..write(obj.stabileId);
   }
 
   @override

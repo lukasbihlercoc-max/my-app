@@ -70,7 +70,7 @@ class DetailPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Hero(
-                            tag: event.id,
+                            tag: event.stabileId,
                             child: Material(
                               color: Colors.transparent,
                               child: Text(

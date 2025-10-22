@@ -74,7 +74,7 @@ class EventCard extends StatelessWidget {
                   vertical: 12, // Mehr vertikales Padding für besseren Abstand
                 ),
                 title: Hero(
-                  tag: event.id,
+                  tag: event.stabileId,
                   child: Material(
                     color: Colors.transparent,
                     child: Text(

@@ -36,11 +36,11 @@ class FahrtFindenPage extends StatelessWidget {
             builder: (context, fahrtService, child) {
               // 🆕 FAHRTEN AUS DEM SERVICE HOLEN
               final fahrtenFuerEvent = fahrtService.alleFahrten
-                  .where((fahrt) => fahrt.eventId == event.id)
+                  .where((fahrt) => fahrt.eventId == event.stabileId)
                   .toList();
 
               // Debug-Ausgabe
-              print("🔍 DEBUG: Event ID: ${event.id}");
+              print("🔍 DEBUG: Event ID: ${event.stabileId}");
               print("🔍 DEBUG: Gefundene Fahrten für Event: ${fahrtenFuerEvent.length}");
 
               return fahrtenFuerEvent.isEmpty

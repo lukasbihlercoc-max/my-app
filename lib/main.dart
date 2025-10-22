@@ -26,6 +26,8 @@ void main() async {
   Hive.registerAdapter(FahrtrichtungAdapter());
   
   //await Hive.deleteBoxFromDisk("events"); //! gespeicherte Events LÖSCHEN
+  //await Hive.deleteBoxFromDisk("fahrten"); //! gespeicherte Fahrten LÖSCHEN
+
   await Hive.openBox<Event>('events');
   await Hive.openBox<FahrtDaten>('fahrten');
 
