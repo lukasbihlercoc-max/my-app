@@ -60,7 +60,10 @@ class MeineFahrtenPage extends StatelessWidget {
                       itemCount: meineFahrten.length,
                       itemBuilder: (context, index) {
                         final fahrt = meineFahrten[index];
-                        return FahrtenCard(fahrt: fahrt); // 🟡 DIE CARD HAT IHR EIGENES MARGIN
+                        return FahrtenCard(
+                          fahrt: fahrt,
+                          isEditable: true, // Zeigt "Bearbeiten" Button
+                          ); 
                       },
                     );
             },

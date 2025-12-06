@@ -7,10 +7,8 @@ part 'fahrt_daten.g.dart';
 enum Fahrtrichtung {
   @HiveField(0)
   hinfahrt,
-  
   @HiveField(1)
   rueckfahrt,
-  
   @HiveField(2)
   hinUndZurueck,
 }
@@ -19,41 +17,44 @@ enum Fahrtrichtung {
 class FahrtDaten {
   @HiveField(0)
   final String eventId;
-  
+
   @HiveField(1)
   final String eventName;
-  
+
   @HiveField(2)
   final String standort;
-  
+
   @HiveField(3)
   final String abfahrtsort;
-  
+
   @HiveField(4)
   final int uhrzeitHour;
-  
+
   @HiveField(5)
   final int uhrzeitMinute;
-  
+
   @HiveField(6)
   final int? rueckuhrzeitHour;
-  
+
   @HiveField(7)
   final int? rueckuhrzeitMinute;
-  
+
   @HiveField(8)
   final int freiePlaetze;
-  
+
   @HiveField(9)
   final Fahrtrichtung richtung;
-  
+
   @HiveField(10)
   final String ownerId;
-  
+
   @HiveField(11)
   final String ownerName;
 
-  // 🆕 KONSTRUKTOR OHNE TIMEOFDAY PARAMETER - für Hive
+  // Neu: eindeutige ID für Update/Lookup
+  @HiveField(12)
+  final String id;
+
   FahrtDaten({
     required this.eventId,
     required this.eventName,
@@ -67,9 +68,9 @@ class FahrtDaten {
     required this.richtung,
     required this.ownerId,
     required this.ownerName,
+    required this.id,
   });
 
-  // 🆕 FACTORY KONSTRUKTOR FÜR DIE UI - mit TimeOfDay Parametern
   factory FahrtDaten.fromTimeOfDay({
     required String eventId,
     required String eventName,
@@ -81,6 +82,7 @@ class FahrtDaten {
     required Fahrtrichtung richtung,
     required String ownerId,
     required String ownerName,
+    String? id,
   }) {
     return FahrtDaten(
       eventId: eventId,
@@ -95,16 +97,21 @@ class FahrtDaten {
       richtung: richtung,
       ownerId: ownerId,
       ownerName: ownerName,
+      id: id ?? DateTime.now().millisecondsSinceEpoch.toString(),
     );
   }
 
-  // Getter für TimeOfDay (für die UI)
-  TimeOfDay get uhrzeit {
-    return TimeOfDay(hour: uhrzeitHour, minute: uhrzeitMinute);
-  }
+  TimeOfDay get uhrzeit => TimeOfDay(hour: uhrzeitHour, minute: uhrzeitMinute);
 
   TimeOfDay? get rueckuhrzeit {
     if (rueckuhrzeitHour == null || rueckuhrzeitMinute == null) return null;
     return TimeOfDay(hour: rueckuhrzeitHour!, minute: rueckuhrzeitMinute!);
   }
+
+  // kompatible Getter (falls im Projekt ältere Namen genutzt werden)
+  String get startOrt => abfahrtsort;
+  String get zielOrt => standort;
+  int get plaetze => freiePlaetze;
+  String get anbieter => ownerName;
+  String get stabileId => eventId;
 }

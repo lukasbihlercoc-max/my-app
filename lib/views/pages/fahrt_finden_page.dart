@@ -71,7 +71,10 @@ class FahrtFindenPage extends StatelessWidget {
                       itemCount: fahrtenFuerEvent.length,
                       itemBuilder: (context, index) {
                         final fahrt = fahrtenFuerEvent[index];
-                        return FahrtenCard(fahrt: fahrt);
+                        return FahrtenCard(
+                          fahrt: fahrt,
+                          isEditable: false, // Zeigt "Mitfahren" Button (oder weglassen, da false default ist)
+                          );
                       },
                     );
             },

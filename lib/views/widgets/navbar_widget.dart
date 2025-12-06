@@ -20,22 +20,22 @@ class NavBarWidget extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(SizeHelper.w(context, 0.08)), // ≈32
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), //? Unschärfe-Effekt
                 child: Container(
                   height: SizeHelper.h(context, 0.09), // ≈72
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withOpacity(0.02),
                     borderRadius: BorderRadius.circular(SizeHelper.w(context, 0.06)), // ≈24
                     border: Border.all(color: Colors.white.withOpacity(0.15)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.blueAccent.withOpacity(0.2),
+                        color: Colors.blueAccent.withOpacity(0.1),
                         blurRadius: SizeHelper.w(context, 0.075), // ≈30
                         spreadRadius: SizeHelper.w(context, 0.0025), // ≈1
                         offset: Offset(0, SizeHelper.h(context, 0.0125)), // ≈10
                       ),
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withOpacity(0.3),
                         blurRadius: SizeHelper.w(context, 0.05), // ≈20
                         offset: Offset(0, SizeHelper.h(context, 0.005)), // ≈4
                       ),

@@ -1,4 +1,3 @@
-import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 
 part 'event_daten.g.dart'; // wird automatisch generiert
@@ -6,7 +5,7 @@ part 'event_daten.g.dart'; // wird automatisch generiert
 @HiveType(typeId: 0)
 class Event extends HiveObject {
   @HiveField(0)
-  String get stabileId => _generateStabileId();
+  String id; // 🔑 echte, gespeicherte ID
 
   @HiveField(1)
   String name;
@@ -25,21 +24,20 @@ class Event extends HiveObject {
 
   @HiveField(6)
   String adresse;
-  
+
+  // optional: alias für alte Verwendung
+  String get stabileId => id;
+
   Event({
+    String? id,
     required this.name,
     required this.datum,
     required this.standort,
     required this.beschreibung,
     required this.typ,
     required this.adresse,
-  });
-
-  String _generateStabileId() {
-    final nameNormalized = name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '-');
-    final datumFormatiert = DateFormat('yyyyMMdd').format(datum);
-    return '$nameNormalized-$datumFormatiert';
-  }
+  }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 }
+
 
   

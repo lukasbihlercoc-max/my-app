@@ -1,3 +1,4 @@
+// ...existing imports...
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:my_app/data/fahrt_daten.dart';
@@ -5,7 +6,7 @@ import 'package:my_app/data/fahrt_daten.dart';
 class FahrtService with ChangeNotifier {
   static final FahrtService _instance = FahrtService._internal();
   factory FahrtService() => _instance;
-  
+
   FahrtService._internal() {
     _init();
   }
@@ -28,15 +29,23 @@ class FahrtService with ChangeNotifier {
 
   Future<void> addFahrt(FahrtDaten fahrt) async {
     await _fahrtenBox.add(fahrt);
-    _loadFahrten(); // Neu laden um die ID zu aktualisieren
-    print("Fahrt hinzugefügt! Gesamte Fahrten: ${_alleFahrten.length}");
+    _loadFahrten();
+    if (kDebugMode) print("Fahrt hinzugefügt! Gesamte Fahrten: ${_alleFahrten.length}");
   }
 
-  List<FahrtDaten> getFahrtenByUser(String userId) {
-    return _alleFahrten.where((fahrt) => fahrt.ownerId == userId).toList();
+  Future<void> updateFahrt(String id, FahrtDaten updated) async {
+    try {
+      final map = _fahrtenBox.toMap();
+      final entry = map.entries.firstWhere((e) => e.value.id == id);
+      await _fahrtenBox.put(entry.key, updated);
+      _loadFahrten();
+      if (kDebugMode) print('Fahrt mit id=$id aktualisiert');
+    } catch (e) {
+      if (kDebugMode) print('updateFahrt: Eintrag mit id=$id nicht gefunden: $e');
+      // optional: fallback - kein throw, nur log
+    }
   }
 
-  List<FahrtDaten> getFahrtenByEvent(String eventId) {
-    return _alleFahrten.where((fahrt) => fahrt.eventId == eventId).toList();
-  }
+  List<FahrtDaten> getFahrtenByUser(String userId) => _alleFahrten.where((f) => f.ownerId == userId).toList();
+  List<FahrtDaten> getFahrtenByEvent(String eventId) => _alleFahrten.where((f) => f.eventId == eventId).toList();
 }

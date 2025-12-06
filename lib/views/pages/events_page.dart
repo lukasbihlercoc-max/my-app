@@ -75,6 +75,16 @@ class _EventsPageState extends State<EventsPage> {
     }
   }
 
+    @override
+  void dispose() {
+    NameController.dispose();
+    standortController.dispose();
+    datumController.dispose();
+    beschreibungController.dispose();
+    adresseController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppBackground(
@@ -83,7 +93,9 @@ class _EventsPageState extends State<EventsPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Text("Neues Event erstellen"),
+          title: Text(
+            widget.event == null ? "Neues Event erstellen" : "Event bearbeiten",
+          ),
         ),
         body: SingleChildScrollView(
           child: Padding(

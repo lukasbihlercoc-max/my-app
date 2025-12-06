@@ -7,10 +7,12 @@ import 'package:my_app/data/fahrt_service.dart';
 import 'package:my_app/data/user_service.dart';
 import 'package:my_app/views/widgets/background_widget.dart';
 
-
 class FahrtAnbietenPage extends StatefulWidget {
   final Event event;
-  const FahrtAnbietenPage({super.key, required this.event});
+  final FahrtDaten?
+  existingFahrt; // 🆕 Optional: Vorhandene Fahrt zum Bearbeiten
+
+  const FahrtAnbietenPage({super.key, required this.event, this.existingFahrt});
 
   @override
   State<FahrtAnbietenPage> createState() => _FahrtAnbietenPageState();
@@ -24,6 +26,25 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
   int freiePlaetze = 1;
 
   Fahrtrichtung fahrtrichtung = Fahrtrichtung.hinfahrt;
+
+  @override
+  void initState() {
+    super.initState();
+    // Wenn eine vorhandene Fahrt übergeben wurde, Formularfelder vorfüllen
+    final f = widget.existingFahrt;
+    if (f != null) {
+      abfahrtsort = f.abfahrtsort;
+      uhrzeit = TimeOfDay(hour: f.uhrzeit.hour, minute: f.uhrzeit.minute);
+      if (f.rueckuhrzeit != null) {
+        rueckuhrzeit = TimeOfDay(
+          hour: f.rueckuhrzeit!.hour,
+          minute: f.rueckuhrzeit!.minute,
+        );
+      }
+      freiePlaetze = f.freiePlaetze;
+      fahrtrichtung = f.richtung;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,33 +72,46 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    
-                    Text("Event: ${widget.event.name}",
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white70)),
+                    Text(
+                      "Event: ${widget.event.name}",
+                      style: TextStyle(fontSize: 16, color: Colors.white70),
+                    ),
 
                     SizedBox(height: 16),
 
-                    Text("Fahrtrichtung:",
-                        style: TextStyle(fontSize: 18, color: Colors.white)),
+                    Text(
+                      "Fahrtrichtung:",
+                      style: TextStyle(fontSize: 18, color: Colors.white),
+                    ),
                     RadioListTile<Fahrtrichtung>(
-                      title: Text("Nur Hinfahrt", style: TextStyle(color: Colors.amber)),
+                      title: Text(
+                        "Nur Hinfahrt",
+                        style: TextStyle(color: Colors.amber),
+                      ),
                       value: Fahrtrichtung.hinfahrt,
                       groupValue: fahrtrichtung,
-                      onChanged: (value) => setState(() => fahrtrichtung = value!),
+                      onChanged: (value) =>
+                          setState(() => fahrtrichtung = value!),
                     ),
                     RadioListTile<Fahrtrichtung>(
-                      title: Text("Nur Rückfahrt", style: TextStyle(color: Colors.amber)),
+                      title: Text(
+                        "Nur Rückfahrt",
+                        style: TextStyle(color: Colors.amber),
+                      ),
                       value: Fahrtrichtung.rueckfahrt,
                       groupValue: fahrtrichtung,
-                      onChanged: (value) => setState(() => fahrtrichtung = value!),
+                      onChanged: (value) =>
+                          setState(() => fahrtrichtung = value!),
                     ),
                     RadioListTile<Fahrtrichtung>(
-                      title: Text("Hin und Zurück", style: TextStyle(color: Colors.amber)),
+                      title: Text(
+                        "Hin und Zurück",
+                        style: TextStyle(color: Colors.amber),
+                      ),
                       value: Fahrtrichtung.hinUndZurueck,
                       groupValue: fahrtrichtung,
-                      onChanged: (value) => setState(() => fahrtrichtung = value!),
+                      onChanged: (value) =>
+                          setState(() => fahrtrichtung = value!),
                     ),
 
                     SizedBox(height: 24),
@@ -99,8 +133,10 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
 
                     Row(
                       children: [
-                        Text("Uhrzeit:",
-                            style: TextStyle(fontSize: 20, color: Colors.white)),
+                        Text(
+                          "Uhrzeit:",
+                          style: TextStyle(fontSize: 20, color: Colors.white),
+                        ),
                         SizedBox(width: 8),
                         Text(
                           uhrzeit != null ? uhrzeit!.format(context) : "",
@@ -116,8 +152,10 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                               setState(() => uhrzeit = picked);
                             }
                           },
-                          child: Text("Wählen",
-                              style: TextStyle(color: Colors.blueAccent)),
+                          child: Text(
+                            "Wählen",
+                            style: TextStyle(color: Colors.blueAccent),
+                          ),
                         ),
                       ],
                     ),
@@ -158,8 +196,10 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
 
                     Row(
                       children: [
-                        Text("Freie Plätze:",
-                            style: TextStyle(fontSize: 20, color: Colors.white)),
+                        Text(
+                          "Freie Plätze:",
+                          style: TextStyle(fontSize: 20, color: Colors.white),
+                        ),
                         SizedBox(width: 8),
                         DropdownButton<int>(
                           dropdownColor: Color.fromARGB(217, 9, 61, 216),
@@ -184,21 +224,22 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                       child: ElevatedButton.icon(
                         icon: Icon(Icons.check),
                         label: Text("Fahrt speichern"),
-                        onPressed: () {
+                        onPressed: () async {
                           if (_formKey.currentState!.validate()) {
                             if (uhrzeit == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
+                                const SnackBar(
                                   content: Text("Bitte wähle eine Uhrzeit"),
                                   backgroundColor: Colors.redAccent,
                                 ),
                               );
                               return;
                             }
+
                             if (fahrtrichtung == Fahrtrichtung.hinUndZurueck &&
                                 rueckuhrzeit == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
+                                const SnackBar(
                                   content: Text("Bitte Rückfahrzeit wählen"),
                                   backgroundColor: Colors.redAccent,
                                 ),
@@ -206,13 +247,23 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                               return;
                             }
 
-                            //User Daten holen:
                             final userData = UserService().getCurrentUser();
 
+                            // 🔑 Wenn wir bearbeiten, übernehmen wir eventId/eventName/standort
+                            final eventId =
+                                widget.existingFahrt?.eventId ??
+                                widget.event.stabileId;
+                            final eventName =
+                                widget.existingFahrt?.eventName ??
+                                widget.event.name;
+                            final standort =
+                                widget.existingFahrt?.standort ??
+                                widget.event.standort;
+
                             final neueFahrt = FahrtDaten.fromTimeOfDay(
-                              eventId: widget.event.stabileId,
-                              eventName: widget.event.name,
-                              standort: widget.event.standort,
+                              eventId: eventId,
+                              eventName: eventName,
+                              standort: standort,
                               abfahrtsort: abfahrtsort,
                               uhrzeit: uhrzeit!,
                               rueckuhrzeit:
@@ -223,21 +274,29 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                               richtung: fahrtrichtung,
                               ownerId: userData['id']!,
                               ownerName: userData['name']!,
+                              id: widget
+                                  .existingFahrt
+                                  ?.id, // gleiche Fahrt-ID beim Bearbeiten
                             );
-                            
-                            //Debug-Ausgabe der stabilen Event ID
-                            print("🆕 DEBUG: Fahrt erstellt für Event ID: ${widget.event.stabileId}");
 
-                            
-                            FahrtService().addFahrt(neueFahrt);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                backgroundColor: Colors.blueAccent,
-                                content: Text("Fahrt gespeichert",
-                                    style: TextStyle(fontSize: 20)),
-                              ),
-                            );
+                            if (widget.existingFahrt != null) {
+                              await FahrtService().updateFahrt(
+                                widget.existingFahrt!.id,
+                                neueFahrt,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Fahrt aktualisiert"),
+                                ),
+                              );
+                            } else {
+                              await FahrtService().addFahrt(neueFahrt);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Fahrt gespeichert"),
+                                ),
+                              );
+                            }
 
                             Navigator.pop(context);
                           }

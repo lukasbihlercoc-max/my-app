@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/data/fahrt_daten.dart';
+import 'package:my_app/data/event_daten.dart';
+import 'package:my_app/views/pages/fahrt_anbieten_page.dart';
+import 'package:my_app/views/widgets/sizehelper_widget.dart';
 
 String getBackgroundImage(Fahrtrichtung richtung) {
   switch (richtung) {
@@ -14,12 +17,12 @@ String getBackgroundImage(Fahrtrichtung richtung) {
 
 class FahrtenCard extends StatelessWidget {
   final FahrtDaten fahrt;
-  //final String benutzername; // ✅ Benutzername manuell übergeben
+  final bool isEditable; // 🆕 Flag, ob die Karte bearbeitbar ist
 
   const FahrtenCard({
     super.key,
     required this.fahrt,
-    //required this.benutzername,
+    this.isEditable = false,
   });
 
   @override
@@ -36,7 +39,7 @@ class FahrtenCard extends StatelessWidget {
                   image: DecorationImage(
                     image: AssetImage(getBackgroundImage(fahrt.richtung)),
                     fit: BoxFit.cover,
-                    alignment: Alignment(0.1, 0.1),
+                    alignment: const Alignment(0.1, 0.1),
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -60,21 +63,21 @@ class FahrtenCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          "Jana Schmölzer",
+                          "Günther Hiden",
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(width: 12),
+                        const SizedBox(width: 12),
                         // Sterne anzeigen basierend auf user.verificationStars
-                        Icon(Icons.star, color: Colors.amber, size: 20),
-                        Icon(Icons.star, color: Colors.amber, size: 20),
-                        Icon(Icons.star, color: Colors.amber, size: 20),
+                        const Icon(Icons.star, color: Colors.amber, size: 20),
+                        const Icon(Icons.star, color: Colors.amber, size: 20),
+                        const Icon(Icons.star, color: Colors.amber, size: 20),
                       ],
                     ),
-                    Divider(color: Colors.amber),
+                    const Divider(color: Colors.amber),
 
                     // ✅ Fahrtrichtung
                     Row(
@@ -181,14 +184,16 @@ class FahrtenCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                    // ✅ Mitfahren-Button
+                    // ✅ Button (Bearbeiten oder Mitfahren)
                     Align(
                       alignment: Alignment.centerRight,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.greenAccent.shade700,
+                          backgroundColor: isEditable 
+                              ? Colors.blueAccent // 🔥 Blau für Bearbeiten
+                              : Colors.greenAccent.shade700, // Grün für Mitfahren
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
@@ -199,9 +204,20 @@ class FahrtenCard extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          // Optional: Buchungslogik
+                          if (isEditable) {
+                            debugPrint('Bearbeiten wurde geklickt');
+                            _handleEdit(context);
+                          } else {
+                            debugPrint('Mitfahren wurde geklickt');
+                            _handleMitfahren(context);
+                          }
                         },
-                        child: const Text("Mitfahren"),
+                        child: Text(
+                          isEditable ? "Bearbeiten" : "Mitfahren",
+                          style: TextStyle(
+                            fontSize: SizeHelper.w(context, 0.04),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -211,6 +227,33 @@ class FahrtenCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _handleEdit(BuildContext context) {
+    // Erstelle ein simples Event-Objekt aus den Fahrtdaten; passe Felder falls nötig
+    final event = Event(
+      name: fahrt.eventName,
+      standort: fahrt.standort,
+      // wenn Event ein Datum erwartet, setze temporär DateTime.now()
+      datum: DateTime.now(), beschreibung: '', typ: '', adresse: '',
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FahrtAnbietenPage(
+          event: event,
+          existingFahrt: fahrt,
+        ),
+      ),
+    );
+  }
+
+  void _handleMitfahren(BuildContext context) {
+    // TODO: Implementiere die Mitfahren-Logik
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Anfrage gesendet')),
     );
   }
 }

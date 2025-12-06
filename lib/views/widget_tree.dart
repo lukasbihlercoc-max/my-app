@@ -38,10 +38,6 @@ class WidgetTree extends StatelessWidget {
         ValueListenableProvider<int>.value(
           value: selectedPageNotifier,
         ),
-        // 🆕 NEU: FahrtService Provider
-        ChangeNotifierProvider<FahrtService>(
-          create: (context) => FahrtService(),
-        ),
       ],
       child: Builder(
         builder: (context) {
