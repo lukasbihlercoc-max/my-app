@@ -1,3 +1,4 @@
+// profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:my_app/views/pages/login_page.dart';
 import 'package:my_app/views/pages/register_page.dart';

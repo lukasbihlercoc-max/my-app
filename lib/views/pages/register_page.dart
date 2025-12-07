@@ -1,3 +1,4 @@
+// register_page.dart
 import 'package:flutter/material.dart';
 import 'package:my_app/views/pages/login_page.dart';
 import 'dart:ui'; // Für ImageFilter.blur

@@ -1,3 +1,4 @@
+// widget_tree.dart
 import 'package:flutter/material.dart';
 import 'package:my_app/data/notifiers.dart';
 import 'package:my_app/views/pages/events_page.dart';

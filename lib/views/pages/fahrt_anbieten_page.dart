@@ -1,3 +1,4 @@
+// fahrt_anbieten_page.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -27,6 +28,8 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
 
   Fahrtrichtung fahrtrichtung = Fahrtrichtung.hinfahrt;
 
+  static const int maxPlaetze = 20; //! Maximale Anzahl freier Plätze
+
   @override
   void initState() {
     super.initState();
@@ -41,7 +44,15 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
           minute: f.rueckuhrzeit!.minute,
         );
       }
-      freiePlaetze = f.freiePlaetze;
+      // freie Plätze korrigieren falls Wert außerhalb des Dropdown-Bereichs liegt
+      if (f.freiePlaetze < 1) {
+  freiePlaetze = 1;
+} else if (f.freiePlaetze > maxPlaetze) {
+  freiePlaetze = maxPlaetze;
+} else {
+  freiePlaetze = f.freiePlaetze;
+}
+
       fahrtrichtung = f.richtung;
     }
   }
@@ -200,23 +211,73 @@ class _FahrtAnbietenPageState extends State<FahrtAnbietenPage> {
                           "Freie Plätze:",
                           style: TextStyle(fontSize: 20, color: Colors.white),
                         ),
-                        SizedBox(width: 8),
-                        DropdownButton<int>(
-                          dropdownColor: Color.fromARGB(217, 9, 61, 216),
-                          value: freiePlaetze,
-                          items: List.generate(
-                            6,
-                            (i) => DropdownMenuItem(
-                              value: i + 1,
-                              child: Text("${i + 1}"),
+                        const SizedBox(width: 16),
+
+                        // ➖ Minus Button (NEU, skalierbar)
+                        SizedBox(
+                          width: 34, // << Größe kannst du hier anpassen
+                          height: 34, // << Größe anpassen
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              padding: EdgeInsets
+                                  .zero, // << Wichtig für korrekte Größe
+                              iconSize: 20, // << Icon-Größe einstellen
+                              icon: const Icon(
+                                Icons.remove,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  if (freiePlaetze > 1) freiePlaetze--;
+                                });
+                              },
                             ),
                           ),
-                          style: TextStyle(color: Colors.amber, fontSize: 24),
-                          onChanged: (value) =>
-                              setState(() => freiePlaetze = value!),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // Zahl in der Mitte
+                        Text(
+                          "$freiePlaetze",
+                          style: const TextStyle(
+                            color: Colors.amber,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
+                        // ➕ Plus Button (NEU, skalierbar)
+                        SizedBox(
+                          width: 34, // << Größe anpassen
+                          height: 34, // << Größe anpassen
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              padding: EdgeInsets.zero, // << wichtig!
+                              iconSize: 20, // << Icon-Größe einstellen
+                              icon: const Icon(Icons.add, color: Colors.white),
+                              onPressed: () {
+                                setState(() {
+                                  if (freiePlaetze < maxPlaetze) freiePlaetze++;
+                                });
+                              },
+                            ),
+                          ),
                         ),
                       ],
                     ),
+
+
 
                     SizedBox(height: 32),
 

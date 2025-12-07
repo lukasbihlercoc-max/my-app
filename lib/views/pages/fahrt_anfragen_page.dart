@@ -1,3 +1,4 @@
+// fahrt_anfragen_page.dart
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:my_app/data/fahrt_daten.dart';
 import 'package:my_app/data/anfrage_daten.dart';
 import 'package:my_app/data/anfrage_service.dart';
 import 'package:my_app/views/widgets/background_widget.dart';
+import 'package:my_app/data/fahrt_service.dart';
 
 class FahrtAnfragenPage extends StatelessWidget {
   final FahrtDaten fahrt;
@@ -165,16 +167,45 @@ class FahrtAnfragenPage extends StatelessWidget {
                                 // ✔️ Annehmen
                                 TextButton.icon(
                                   onPressed: () async {
-                                    final service = Provider.of<AnfrageService>(
-                                      context,
-                                      listen: false,
+                                    final anfrageService =
+                                        Provider.of<AnfrageService>(
+                                          context,
+                                          listen: false,
+                                        );
+
+                                    final fahrtService =
+                                        Provider.of<FahrtService>(
+                                          context,
+                                          listen: false,
+                                        );
+
+                                    // 1️⃣ Anfrage auf "akzeptiert" setzen
+                                    await anfrageService.akzeptiereAnfrage(a);
+
+                                    // 2️⃣ Plätze reduzieren
+                                    final neuePlaetze =
+                                        fahrt.freiePlaetze - a.seatsRequested;
+
+                                    final aktualisierteFahrt = fahrt.copyWith(
+                                      freiePlaetze: neuePlaetze < 0
+                                          ? 0
+                                          : neuePlaetze,
                                     );
 
-                                    await service.akzeptiereAnfrage(a);
+                                    // 3️⃣ Fahrt speichern
+                                    await fahrtService.updateFahrt(
+                                      fahrt.id,
+                                      aktualisierteFahrt,
+                                    );
 
+                                    // 4️⃣ Feedback
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Anfrage angenommen"),
+                                      SnackBar(
+                                        content: Text(
+                                          neuePlaetze > 0
+                                              ? "Anfrage angenommen – verbleibende Plätze: $neuePlaetze"
+                                              : "Anfrage angenommen – Fahrt ist jetzt voll",
+                                        ),
                                       ),
                                     );
                                   },

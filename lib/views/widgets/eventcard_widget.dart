@@ -1,3 +1,4 @@
+// eventcard_widget.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/data/event_daten.dart';

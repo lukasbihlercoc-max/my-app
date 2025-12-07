@@ -1,3 +1,4 @@
+// fahrt_daten.dart
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -99,6 +100,7 @@ class FahrtDaten {
       ownerName: ownerName,
       id: id ?? DateTime.now().millisecondsSinceEpoch.toString(),
     );
+    
   }
 
   TimeOfDay get uhrzeit => TimeOfDay(hour: uhrzeitHour, minute: uhrzeitMinute);
@@ -114,4 +116,36 @@ class FahrtDaten {
   int get plaetze => freiePlaetze;
   String get anbieter => ownerName;
   String get stabileId => eventId;
+    FahrtDaten copyWith({
+    String? eventId,
+    String? eventName,
+    String? standort,
+    String? abfahrtsort,
+    int? uhrzeitHour,
+    int? uhrzeitMinute,
+    int? rueckuhrzeitHour,
+    int? rueckuhrzeitMinute,
+    int? freiePlaetze,
+    Fahrtrichtung? richtung,
+    String? ownerId,
+    String? ownerName,
+    String? id,
+  }) {
+    return FahrtDaten(
+      eventId: eventId ?? this.eventId,
+      eventName: eventName ?? this.eventName,
+      standort: standort ?? this.standort,
+      abfahrtsort: abfahrtsort ?? this.abfahrtsort,
+      uhrzeitHour: uhrzeitHour ?? this.uhrzeitHour,
+      uhrzeitMinute: uhrzeitMinute ?? this.uhrzeitMinute,
+      rueckuhrzeitHour: rueckuhrzeitHour ?? this.rueckuhrzeitHour,
+      rueckuhrzeitMinute: rueckuhrzeitMinute ?? this.rueckuhrzeitMinute,
+      freiePlaetze: freiePlaetze ?? this.freiePlaetze,
+      richtung: richtung ?? this.richtung,
+      ownerId: ownerId ?? this.ownerId,
+      ownerName: ownerName ?? this.ownerName,
+      id: id ?? this.id,
+    );
+  }
+
 }

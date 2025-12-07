@@ -1,3 +1,4 @@
+// anfrage_daten.dart
 import 'package:hive/hive.dart';
 
 part 'anfrage_daten.g.dart';

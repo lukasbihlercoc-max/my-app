@@ -1,3 +1,4 @@
+// detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui'; // Für ImageFilter.blur

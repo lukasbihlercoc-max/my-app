@@ -1,3 +1,4 @@
+// fahrt_finden_page.dart
 import 'package:flutter/material.dart';
 import 'package:my_app/data/event_daten.dart';
 import 'dart:ui';
@@ -36,12 +37,18 @@ class FahrtFindenPage extends StatelessWidget {
             builder: (context, fahrtService, child) {
               // 🆕 FAHRTEN AUS DEM SERVICE HOLEN
               final fahrtenFuerEvent = fahrtService.alleFahrten
-                  .where((fahrt) => fahrt.eventId == event.stabileId)
+                  .where(
+                    (fahrt) =>
+                        fahrt.eventId == event.stabileId &&
+                        fahrt.freiePlaetze > 0,
+                  ) // 🔥 nur Fahrten mit freien Plätzen
                   .toList();
 
               // Debug-Ausgabe
               print("🔍 DEBUG: Event ID: ${event.stabileId}");
-              print("🔍 DEBUG: Gefundene Fahrten für Event: ${fahrtenFuerEvent.length}");
+              print(
+                "🔍 DEBUG: Gefundene Fahrten für Event: ${fahrtenFuerEvent.length}",
+              );
 
               return fahrtenFuerEvent.isEmpty
                   ? Center(
@@ -73,8 +80,9 @@ class FahrtFindenPage extends StatelessWidget {
                         final fahrt = fahrtenFuerEvent[index];
                         return FahrtenCard(
                           fahrt: fahrt,
-                          isEditable: false, // Zeigt "Mitfahren" Button (oder weglassen, da false default ist)
-                          );
+                          isEditable:
+                              false, // Zeigt "Mitfahren" Button (oder weglassen, da false default ist)
+                        );
                       },
                     );
             },

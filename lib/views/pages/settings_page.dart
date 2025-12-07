@@ -1,3 +1,4 @@
+// settings_page.dart
 import 'package:flutter/material.dart';
 import 'dart:ui'; // Für ImageFilter.blur
 import 'package:my_app/data/notifiers.dart';

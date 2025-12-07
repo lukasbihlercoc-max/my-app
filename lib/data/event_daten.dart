@@ -1,3 +1,4 @@
+// event_daten.dart
 import 'package:hive/hive.dart';
 
 part 'event_daten.g.dart'; // wird automatisch generiert
