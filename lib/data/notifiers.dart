@@ -8,3 +8,6 @@ ValueNotifier<int> selectedPageNotifier = ValueNotifier(0);     //? 2.) wir zu 1
 ValueNotifier<bool> isDarkModeNotifier = ValueNotifier(true);   //! 2.) wird zu false
 ValueNotifier<List<Event>> eventListNotifier = ValueNotifier([]);
 final searchTextNotifier = ValueNotifier<String>("");
+
+// 🔹 Neuer Notifier für ausgewählten Radius in km (null = alle)
+final selectedRadiusNotifier = ValueNotifier<int?>(null);

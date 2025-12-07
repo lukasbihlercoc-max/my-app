@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'package:my_app/data/fahrt_daten.dart';
 import 'package:my_app/data/event_daten.dart';
+import 'package:my_app/data/anfrage_daten.dart';
+import 'package:my_app/data/anfrage_service.dart';
+import 'package:my_app/data/user_service.dart';
 import 'package:my_app/views/pages/fahrt_anbieten_page.dart';
 import 'package:my_app/views/widgets/sizehelper_widget.dart';
+import 'package:my_app/views/pages/fahrt_anfragen_page.dart';
 
 String getBackgroundImage(Fahrtrichtung richtung) {
   switch (richtung) {
@@ -19,11 +25,7 @@ class FahrtenCard extends StatelessWidget {
   final FahrtDaten fahrt;
   final bool isEditable; // 🆕 Flag, ob die Karte bearbeitbar ist
 
-  const FahrtenCard({
-    super.key,
-    required this.fahrt,
-    this.isEditable = false,
-  });
+  const FahrtenCard({super.key, required this.fahrt, this.isEditable = false});
 
   @override
   Widget build(BuildContext context) {
@@ -62,21 +64,47 @@ class FahrtenCard extends StatelessWidget {
                     // ✅ Benutzername
                     Row(
                       children: [
-                        Text(
-                          "Günther Hiden",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        // Linker Teil: Name + Sterne
+                        Expanded(
+                          child: Row(
+                            children: const [
+                              Text(
+                                "Günther Hiden",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                              Icon(Icons.star, color: Colors.amber, size: 20),
+                            ],
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        // Sterne anzeigen basierend auf user.verificationStars
-                        const Icon(Icons.star, color: Colors.amber, size: 20),
-                        const Icon(Icons.star, color: Colors.amber, size: 20),
-                        const Icon(Icons.star, color: Colors.amber, size: 20),
+
+                        // Rechter Teil: Chat-Icon NUR wenn isEditable = true
+                        if (isEditable)
+                          IconButton(
+                            icon: const Icon(
+                              Icons.chat_bubble_outline,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      FahrtAnfragenPage(fahrt: fahrt),
+                                ),
+                              );
+                            },
+                          ),
                       ],
                     ),
+
                     const Divider(color: Colors.amber),
 
                     // ✅ Fahrtrichtung
@@ -191,9 +219,12 @@ class FahrtenCard extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isEditable 
-                              ? Colors.blueAccent // 🔥 Blau für Bearbeiten
-                              : Colors.greenAccent.shade700, // Grün für Mitfahren
+                          backgroundColor: isEditable
+                              ? Colors
+                                    .blueAccent // 🔥 Blau für Bearbeiten
+                              : Colors
+                                    .greenAccent
+                                    .shade700, // Grün für Mitfahren
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
@@ -205,10 +236,8 @@ class FahrtenCard extends StatelessWidget {
                         ),
                         onPressed: () {
                           if (isEditable) {
-                            debugPrint('Bearbeiten wurde geklickt');
                             _handleEdit(context);
                           } else {
-                            debugPrint('Mitfahren wurde geklickt');
                             _handleMitfahren(context);
                           }
                         },
@@ -231,29 +260,119 @@ class FahrtenCard extends StatelessWidget {
   }
 
   void _handleEdit(BuildContext context) {
-    // Erstelle ein simples Event-Objekt aus den Fahrtdaten; passe Felder falls nötig
     final event = Event(
       name: fahrt.eventName,
       standort: fahrt.standort,
-      // wenn Event ein Datum erwartet, setze temporär DateTime.now()
-      datum: DateTime.now(), beschreibung: '', typ: '', adresse: '',
+      datum: DateTime.now(), // TODO: echtes Event-Datum, wenn vorhanden
+      beschreibung: '',
+      typ: '',
+      adresse: '',
     );
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FahrtAnbietenPage(
-          event: event,
-          existingFahrt: fahrt,
-        ),
+        builder: (context) =>
+            FahrtAnbietenPage(event: event, existingFahrt: fahrt),
       ),
     );
   }
 
-  void _handleMitfahren(BuildContext context) {
-    // TODO: Implementiere die Mitfahren-Logik
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Anfrage gesendet')),
+  void _handleMitfahren(BuildContext context) async {
+    // 1️⃣ Aktuellen User holen
+    final user = UserService().getCurrentUser();
+
+    // 2️⃣ Dialog-Controller
+    final seatsController = TextEditingController(text: '1');
+    final messageController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(230, 30, 30, 30),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            "Mitfahranfrage senden",
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: seatsController,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "Plätze",
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white38),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: messageController,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: "Nachricht (optional)",
+                  labelStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white38),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blueAccent),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Abbrechen"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text("Senden"),
+            ),
+          ],
+        );
+      },
     );
+
+    if (confirmed != true) return;
+
+    final seats = int.tryParse(seatsController.text.trim()) ?? 1;
+
+    // 3️⃣ Anfrage-Objekt bauen
+    final anfrage = AnfrageDaten.create(
+      fahrtId: fahrt.id,
+      eventId: fahrt.eventId,
+      requesterId: user['id']!,
+      requesterName: user['name']!,
+      seatsRequested: seats,
+      fahrtOwnerId: fahrt.ownerId,
+      message: messageController.text.trim().isEmpty
+          ? null
+          : messageController.text.trim(),
+    );
+
+    // 4️⃣ Über Provider speichern
+    final anfrageService = Provider.of<AnfrageService>(context, listen: false);
+    await anfrageService.addAnfrage(anfrage);
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Anfrage wurde gesendet")));
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui'; // Für ImageFilter.blur
 import 'package:my_app/views/widgets/background_widget.dart';
 import 'package:my_app/views/pages/register_page.dart';
+import 'package:my_app/data/user_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -232,19 +233,23 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      // Hier Login-Logik implementieren
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          // Nach erfolgreichem Login zurück zur Profilseite
-          Navigator.pop(context);
-        }
-      });
-    }
+  void _login() async {
+  if (_formKey.currentState!.validate()) {
+    setState(() => _isLoading = true);
+
+    // 🔑 UserService aufrufen
+    await UserService().login(
+      _emailController.text.trim(),
+      _passwordController.text, // echtes Passwort-Handling später
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    // Zurück zur Profilseite
+    Navigator.pop(context);
   }
+}
 
   @override
   void dispose() {

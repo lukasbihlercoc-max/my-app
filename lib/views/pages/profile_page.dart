@@ -23,10 +23,11 @@ class ProfilePage extends StatelessWidget {
             final isLoggedIn = snapshot.data ?? false;
             
             if (isLoggedIn) {
-              return _buildProfileView();
-            } else {
-              return _buildLoginOptions(context);
-            }
+  return const LoggedInProfileView();
+} else {
+  return _buildLoginOptions(context);
+}
+
           },
         ),
       ),
@@ -202,6 +203,139 @@ class ProfilePage extends StatelessWidget {
           const SizedBox(height: 24),
           // Weitere Profilinformationen...
         ],
+      ),
+    );
+  }
+}
+
+class LoggedInProfileView extends StatefulWidget {
+  const LoggedInProfileView({super.key});
+
+  @override
+  State<LoggedInProfileView> createState() => _LoggedInProfileViewState();
+}
+
+class _LoggedInProfileViewState extends State<LoggedInProfileView> {
+  final TextEditingController _townController = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHomeTown();
+  }
+
+  Future<void> _loadHomeTown() async {
+    final town = await UserService().getHomeTown();
+    if (!mounted) return;
+    _townController.text = town ?? '';
+  }
+
+  Future<void> _saveHomeTown() async {
+    final town = _townController.text.trim();
+    setState(() => _isSaving = true);
+    await UserService().setHomeTown(town);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Wohnort gespeichert")),
+    );
+  }
+
+  @override
+  void dispose() {
+    _townController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Column(
+          children: [
+            const CircleAvatar(
+              radius: 50,
+              backgroundImage: AssetImage("assets/image/default_avatar.png"),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Dein Profil",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 🔹 Wohnort-Feld
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                "Wohnort",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _townController,
+              style: const TextStyle(color: Colors.white, fontSize: 18),
+              decoration: InputDecoration(
+                hintText: "z. B. Villach",
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: Colors.black.withOpacity(0.3),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white38),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.white38),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      const BorderSide(color: Colors.blueAccent, width: 2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _saveHomeTown,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child:
+                            CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text("Wohnort speichern", style: TextStyle(fontSize: 16)),
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Hier kannst du später dein Sternesystem etc. weiter reinbauen
+          ],
+        ),
       ),
     );
   }

@@ -52,4 +52,16 @@ class UserService {
       'name': userName,
     };
   }
+    // 🔹 Wohnort speichern
+  Future<void> setHomeTown(String town) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_home_town', town);
+  }
+
+  // 🔹 Wohnort lesen
+  Future<String?> getHomeTown() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_home_town');
+  }
+
 }

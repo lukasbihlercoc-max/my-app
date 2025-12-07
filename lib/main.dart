@@ -9,6 +9,9 @@ import 'package:my_app/data/event_daten.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:my_app/views/widget_tree.dart';
+import 'package:my_app/data/anfrage_daten.dart';
+import 'package:my_app/data/anfrage_service.dart';
+
 
 // 🆕 NEUE IMPORTS FÜR PROVIDER
 import 'package:provider/provider.dart'; // 🆕 Provider Package
@@ -24,12 +27,15 @@ void main() async {
   Hive.registerAdapter(EventAdapter()); // oder EventAdapter, je nach Name
   Hive.registerAdapter(FahrtDatenAdapter());
   Hive.registerAdapter(FahrtrichtungAdapter());
+  Hive.registerAdapter(AnfrageStatusAdapter());
+  Hive.registerAdapter(AnfrageDatenAdapter());
   
   //await Hive.deleteBoxFromDisk("events"); //! gespeicherte Events LÖSCHEN
   //await Hive.deleteBoxFromDisk("fahrten"); //! gespeicherte Fahrten LÖSCHEN
 
   await Hive.openBox<Event>('events');
   await Hive.openBox<FahrtDaten>('fahrten');
+  await Hive.openBox<AnfrageDaten>('anfragen');
 
   runApp(const MyApp());
 }
@@ -71,7 +77,10 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider<FahrtService>(
           create: (context) => FahrtService(), // Erstellt eine Instanz des FahrtService
         ),
-        
+
+        ChangeNotifierProvider<AnfrageService>(
+      create: (context) => AnfrageService(),
+        ),
         // 🆕 Sie können hier später weitere Provider hinzufügen z.B.:
         // ChangeNotifierProvider<UserService>(create: (context) => UserService()),
         // ChangeNotifierProvider<EventService>(create: (context) => EventService()),
