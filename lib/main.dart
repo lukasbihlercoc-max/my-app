@@ -33,10 +33,14 @@ void main() async {
   
   //await Hive.deleteBoxFromDisk("events"); //! gespeicherte Events LÖSCHEN
   //await Hive.deleteBoxFromDisk("fahrten"); //! gespeicherte Fahrten LÖSCHEN
+  //await Hive.deleteBoxFromDisk("anfragen"); //! gespeicherte Anfragen LÖSCHEN
 
   await Hive.openBox<Event>('events');
   await Hive.openBox<FahrtDaten>('fahrten');
   await Hive.openBox<AnfrageDaten>('anfragen');
+
+  // 🔹 Favoriten laden & Listener registrieren
+  await initFavouriteEvents();
 
   runApp(const MyApp());
 }

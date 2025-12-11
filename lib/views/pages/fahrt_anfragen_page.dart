@@ -336,7 +336,7 @@ class _AnfrageCardState extends State<_AnfrageCard> {
                       }
 
                       // 1) Anfrage auf "akzeptiert" setzen
-                      await anfrageService.akzeptiereAnfrage(a);
+                      await anfrageService.akzeptiereAnfrage(a, seatsToAccept);
 
                       // 2) Plätze neu berechnen
                       final neuePlaetze = freie - seatsToAccept;

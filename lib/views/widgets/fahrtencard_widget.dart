@@ -1,5 +1,6 @@
 // fahrtencard_widget.dart
 import 'package:flutter/material.dart';
+import 'package:my_app/data/fahrt_service.dart';
 import 'package:provider/provider.dart';
 
 import 'package:my_app/data/fahrt_daten.dart';
@@ -13,7 +14,6 @@ import 'package:my_app/views/pages/fahrt_anfragen_page.dart';
 
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
-import 'package:my_app/data/event_daten.dart';
 
 import 'dart:ui'; // 🔥 NEU für BackdropFilter / Blur
 
@@ -247,23 +247,60 @@ GestureDetector(
                     const SizedBox(height: 6),
 
                     // ✅ Strecke
-                    Text(
-                      () {
-                        switch (fahrt.richtung) {
-                          case Fahrtrichtung.hinfahrt:
-                            return "${fahrt.abfahrtsort} → ${fahrt.standort}";
-                          case Fahrtrichtung.rueckfahrt:
-                            return "${fahrt.standort} → ${fahrt.abfahrtsort}";
-                          case Fahrtrichtung.hinUndZurueck:
-                            return "${fahrt.abfahrtsort} → ${fahrt.standort}";
-                        }
-                      }(),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
+                   // ✅ Strecke mit Richtungspfeilen
+                    Row(
+                      children: [
+                        Text(
+                          fahrt.abfahrtsort,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        // Pfeil abhängig von der Richtung
+                        () {
+                          switch (fahrt.richtung) {
+                            case Fahrtrichtung.hinfahrt:
+                              return const Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Colors.white,
+                                size: 26,
+                              );
+
+                            case Fahrtrichtung.rueckfahrt:
+                              return const Icon(
+                                Icons.arrow_back_rounded,
+                                color: Colors.white,
+                                size: 26,
+                              );
+
+                            case Fahrtrichtung.hinUndZurueck:
+                              return const Icon(
+                                Icons.swap_horiz_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              );
+                          }
+                        }(),
+
+                        const SizedBox(width: 8),
+
+                        Text(
+                          fahrt.standort,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
+
+
                     const SizedBox(height: 6),
 
                     // ✅ Uhrzeit(en)
@@ -324,41 +361,83 @@ GestureDetector(
                     ),
                     const SizedBox(height: 10),
 
-                    // ✅ Button (Bearbeiten oder Mitfahren)
+                    // ✅ Buttons (Bearbeiten / Mitfahren / Löschen)
                     Align(
                       alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isEditable
-                              ? Colors
-                                    .blueAccent // 🔥 Blau für Bearbeiten
-                              : Colors
-                                    .greenAccent
-                                    .shade700, // Grün für Mitfahren
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          if (isEditable) {
-                            _handleEdit(context);
-                          } else {
-                            _handleMitfahren(context);
-                          }
-                        },
-                        child: Text(
-                          isEditable ? "Bearbeiten" : "Mitfahren",
-                          style: TextStyle(
-                            fontSize: SizeHelper.w(context, 0.04),
-                          ),
-                        ),
-                      ),
+                      child: isEditable
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // 🔴 Löschen-Button (gleiches Design wie Bearbeiten, nur rot)
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.redAccent, // 🔴 rote Fläche
+                                    foregroundColor:
+                                        Colors.white, // weiße Schrift
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 8,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () => _handleDelete(context),
+                                  child: Text(
+                                    "Löschen",
+                                    style: TextStyle(
+                                      fontSize: SizeHelper.w(context, 0.04),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+
+                                // 🔵 Bearbeiten-Button
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueAccent,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                      vertical: 8,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () => _handleEdit(context),
+                                  child: Text(
+                                    "Bearbeiten",
+                                    style: TextStyle(
+                                      fontSize: SizeHelper.w(context, 0.04),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.greenAccent.shade700,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 8,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () => _handleMitfahren(context),
+                              child: Text(
+                                "Mitfahren",
+                                style: TextStyle(
+                                  fontSize: SizeHelper.w(context, 0.04),
+                                ),
+                              ),
+                            ),
                     ),
+
                   ],
                 ),
               ),
@@ -484,7 +563,7 @@ GestureDetector(
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          event.standort,
+                          event.adresse,
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
@@ -544,13 +623,15 @@ GestureDetector(
 
   //! Mitfahr-Fenster
 
- void _handleMitfahren(BuildContext context) async {
+void _handleMitfahren(BuildContext context) async {
   final user = UserService().getCurrentUser();
-  final seatsController = TextEditingController(text: '1');
   final messageController = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
   final maxSeats = fahrt.freiePlaetze;
+
+  // aktuell ausgewählte Plätze
+  int selectedSeats = 1;
 
   final confirmed = await showDialog<bool>(
     context: context,
@@ -558,199 +639,240 @@ GestureDetector(
     builder: (ctx) {
       final size = MediaQuery.of(ctx).size;
 
-      return Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-            child: Container(
-              width: size.width * 0.85,
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-              constraints: BoxConstraints(
-                minHeight: size.height * 0.40,
-                maxHeight: size.height * 0.75,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.35),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12),
-                  ),
-                ],
-              ),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 🔹 Header mit Eventname & Standort
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.chat_bubble_outline,
-                          color: Colors.white,
+      // AnimatedPadding + SingleChildScrollView um Keyboard-Overlap zu vermeiden
+      return AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.decelerate,
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Center(
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+                // WICHTIG: Material-Widget hinzufügen, aber transparent, damit
+                // das Aussehen gleich bleibt. Das stellt den benötigten
+                // Material-Context für TextFormField/TextField bereit.
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: StatefulBuilder(
+                    builder: (ctxInner, setStateDialog) {
+                      return Container(
+                        width: size.width * 0.85,
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                        constraints: BoxConstraints(
+                          // maxHeight kleiner als Bildschirm, damit bei Keyboard noch Platz bleibt
+                          maxHeight: size.height * 0.85,
+                          minHeight: 200,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.35),
+                              blurRadius: 24,
+                              offset: const Offset(0, 12),
+                            ),
+                          ],
+                        ),
+                        child: Form(
+                          key: formKey,
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              // HEADER
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.chat_bubble_outline,
+                                      color: Colors.white),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "Mitfahranfrage senden",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          fahrt.eventName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          fahrt.standort,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white38,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // PLÄTZE
                               const Text(
-                                "Mitfahranfrage senden",
-                                overflow: TextOverflow.ellipsis,
+                                "Plätze",
                                 style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+
+                              Row(
+                                children: [
+                                  // MINUS
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.remove,
+                                          color: Colors.white),
+                                      onPressed: selectedSeats > 1
+                                          ? () {
+                                              setStateDialog(() {
+                                                selectedSeats--;
+                                              });
+                                            }
+                                          : null,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 16),
+
+                                  Text(
+                                    "$selectedSeats",
+                                    style: const TextStyle(
+                                      color: Colors.amber,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 16),
+
+                                  // PLUS
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: IconButton(
+                                      icon: const Icon(Icons.add, color: Colors.white),
+                                      onPressed: selectedSeats < maxSeats
+                                          ? () {
+                                              setStateDialog(() {
+                                                selectedSeats++;
+                                              });
+                                            }
+                                          : null,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      "Max. $maxSeats verfügbar",
+                                      style: const TextStyle(
+                                          color: Colors.white38, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // NACHRICHT
+                              const Text(
+                                "Nachricht (optional)",
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                fahrt.eventName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+
+                              // TextFormField benötigt Material-Ancestor (deshalb oben Material),
+                              // autofocus false damit Tastatur nicht sofort aufpoppt (optional)
+                              TextFormField(
+                                controller: messageController,
+                                style: const TextStyle(color: Colors.white),
+                                maxLines: 3,
+                                minLines: 3,
+                                autofocus: false,
+                                decoration: const InputDecoration(
+                                  hintText: "z. B. Treffpunkt oder Info",
+                                  hintStyle: TextStyle(color: Colors.white38),
+                                  enabledBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(color: Colors.white24),
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide:
+                                        BorderSide(color: Colors.lightBlueAccent),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                fahrt.standort,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 12,
-                                ),
+
+                              const SizedBox(height: 20),
+
+                              // BUTTONS
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text(
+                                      "Abbrechen",
+                                      style: TextStyle(color: Colors.white70),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(ctx, true);
+                                    },
+                                    child: const Text(
+                                      "Senden",
+                                      style: TextStyle(
+                                        color: Colors.lightBlueAccent,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // 🔹 Plätze
-                    const Text(
-                      "Plätze",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    TextFormField(
-                      controller: seatsController,
-                      keyboardType: TextInputType.number,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        hintText: "Anzahl der Plätze",
-                        hintStyle: TextStyle(color: Colors.white38),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white24),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.lightBlueAccent),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Bitte Anzahl der Plätze eingeben';
-                        }
-                        final n = int.tryParse(value.trim());
-                        if (n == null || n <= 0) {
-                          return 'Bitte eine gültige Zahl eingeben';
-                        }
-                        if (n > maxSeats) {
-                          return 'Nur $maxSeats Platz'
-                              '${maxSeats == 1 ? "" : "e"} verfügbar';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Max. $maxSeats Plätze verfügbar",
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 12,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // 🔹 Nachricht (optional)
-                    const Text(
-                      "Nachricht (optional)",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    TextFormField(
-                      controller: messageController,
-                      style: const TextStyle(color: Colors.white),
-                      maxLines: 3,
-                      minLines: 3,
-                      decoration: const InputDecoration(
-                        alignLabelWithHint: true,
-                        hintText: "z. B. Treffpunkt oder Wunschzeit",
-                        hintStyle: TextStyle(color: Colors.white38),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white24),
-                        ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.lightBlueAccent),
-                        ),
-                        contentPadding:
-                            EdgeInsets.symmetric(vertical: 12),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // 🔹 Buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text(
-                            "Abbrechen",
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        TextButton(
-                          onPressed: () {
-                            if (formKey.currentState!.validate()) {
-                              Navigator.pop(ctx, true);
-                            }
-                          },
-                          child: const Text(
-                            "Senden",
-                            style: TextStyle(
-                              color: Colors.lightBlueAccent,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -762,7 +884,8 @@ GestureDetector(
 
   if (confirmed != true) return;
 
-  final seats = int.parse(seatsController.text.trim());
+  // Plätze = die ausgewählte Zahl
+  final seats = selectedSeats;
 
   final anfrage = AnfrageDaten.create(
     fahrtId: fahrt.id,
@@ -779,11 +902,129 @@ GestureDetector(
   await AnfrageService().addAnfrage(anfrage);
 
   if (!context.mounted) return;
+
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(content: Text("Anfrage wurde gesendet")),
   );
 }
-  
 
 
+  void _handleDelete(BuildContext context) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: true,
+    builder: (ctx) {
+      final size = MediaQuery.of(ctx).size;
+
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+            child: Container(
+              width: size.width * 0.85,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 🔹 Header mit Icon + Titel
+                  Row(
+                    children: const [
+                      Icon(Icons.delete_forever,
+                          color: Colors.redAccent, size: 24),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Fahrt löschen?",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  const Text(
+                    "Wenn du diese Fahrt löscht, werden auch alle Mitfahr-Anfragen dafür abgebrochen.",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // 🔹 Buttons unten rechts
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text(
+                          "Abbrechen",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text(
+                          "Löschen",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+
+  if (confirmed != true) return;
+
+  final fahrtService = Provider.of<FahrtService>(context, listen: false);
+  final anfrageService = Provider.of<AnfrageService>(context, listen: false);
+
+  // 1) alle Anfragen zu dieser Fahrt abbrechen
+  await anfrageService.cancelAnfragenForFahrt(fahrt.id);
+
+  // 2) Fahrt löschen
+  await fahrtService.deleteFahrt(fahrt.id);
+
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Fahrt wurde gelöscht")),
+  );
 }
+}
+

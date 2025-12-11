@@ -48,4 +48,23 @@ class FahrtService with ChangeNotifier {
 
   List<FahrtDaten> getFahrtenByUser(String userId) => _alleFahrten.where((f) => f.ownerId == userId).toList();
   List<FahrtDaten> getFahrtenByEvent(String eventId) => _alleFahrten.where((f) => f.eventId == eventId).toList();
+
+  //! deleteFahrt
+  Future<void> deleteFahrt(String id) async {
+    try {
+      final map = _fahrtenBox.toMap(); // key -> FahrtDaten
+      final entry = map.entries.firstWhere((e) => e.value.id == id);
+
+      await _fahrtenBox.delete(entry.key);
+      _loadFahrten();
+
+      if (kDebugMode) {
+        print('🗑️ Fahrt mit id=$id gelöscht');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ deleteFahrt: Eintrag mit id=$id nicht gefunden: $e');
+      }
+    }
+  }
 }

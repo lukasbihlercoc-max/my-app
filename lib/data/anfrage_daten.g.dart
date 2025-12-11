@@ -27,13 +27,14 @@ class AnfrageDatenAdapter extends TypeAdapter<AnfrageDaten> {
       createdAt: fields[7] as DateTime,
       fahrtOwnerId: fields[9] as String,
       message: fields[8] as String?,
+      seatsAccepted: fields[10] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, AnfrageDaten obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class AnfrageDatenAdapter extends TypeAdapter<AnfrageDaten> {
       ..writeByte(8)
       ..write(obj.message)
       ..writeByte(9)
-      ..write(obj.fahrtOwnerId);
+      ..write(obj.fahrtOwnerId)
+      ..writeByte(10)
+      ..write(obj.seatsAccepted);
   }
 
   @override

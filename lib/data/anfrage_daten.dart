@@ -45,6 +45,9 @@ class AnfrageDaten {
   @HiveField(9)
   final String fahrtOwnerId; // 🔥 Fahrer der Fahrt
 
+  @HiveField(10)
+  final int? seatsAccepted; // Anzahl der akzeptierten Sitze
+
   AnfrageDaten({
     required this.id,
     required this.fahrtId,
@@ -56,6 +59,7 @@ class AnfrageDaten {
     required this.createdAt,
     required this.fahrtOwnerId,
     this.message,
+    this.seatsAccepted,
   });
 
   factory AnfrageDaten.create({
@@ -78,11 +82,13 @@ class AnfrageDaten {
       createdAt: DateTime.now(),
       fahrtOwnerId: fahrtOwnerId,
       message: message,
+      seatsAccepted: null,
     );
   }
 
   AnfrageDaten copyWith({
     AnfrageStatus? status,
+    int? seatsAccepted,
   }) {
     return AnfrageDaten(
       id: id,
@@ -95,6 +101,7 @@ class AnfrageDaten {
       createdAt: createdAt,
       message: message,
       fahrtOwnerId: fahrtOwnerId,
+      seatsAccepted: seatsAccepted ?? this.seatsAccepted,
     );
   }
 }

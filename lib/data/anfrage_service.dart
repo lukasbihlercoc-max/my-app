@@ -86,13 +86,41 @@ class AnfrageService with ChangeNotifier {
   // STATUS-HILFSMETHODEN: akzeptieren / ablehnen
   // -------------------------------------------------------------
 
-  Future<void> akzeptiereAnfrage(AnfrageDaten anfrage) async {
-    final updated = anfrage.copyWith(status: AnfrageStatus.akzeptiert);
-    await updateAnfrage(anfrage.id, updated);
+  Future<void> akzeptiereAnfrage(AnfrageDaten anfrage, int seatsAccepted) async {
+  final updated = anfrage.copyWith(
+    status: AnfrageStatus.akzeptiert,
+    seatsAccepted: seatsAccepted, // 🔥 hier merken wir es
+  );
+  await updateAnfrage(anfrage.id, updated);
+
+  if (kDebugMode) {
+    print("✅ Anfrage ${anfrage.id} akzeptiert mit $seatsAccepted Platz/Plätzen");
   }
+}
+
 
   Future<void> ablehnenAnfrage(AnfrageDaten anfrage) async {
     final updated = anfrage.copyWith(status: AnfrageStatus.abgelehnt);
     await updateAnfrage(anfrage.id, updated);
   }
+
+  // -------------------------------------------------------------
+  // LÖSCHEN
+  // -------------------------------------------------------------
+   Future<void> cancelAnfragenForFahrt(String fahrtId) async {
+    // Kopie der aktuellen Anfragen, damit wir während des Loopens gefahrlos updaten können
+    final relevant = _alleAnfragen
+        .where((a) => a.fahrtId == fahrtId)
+        .toList();
+
+    for (final a in relevant) {
+      final updated = a.copyWith(status: AnfrageStatus.abgelehnt);
+      await updateAnfrage(a.id, updated);
+    }
+
+    if (kDebugMode) {
+      print("🚫 Alle Anfragen für Fahrt $fahrtId wurden auf 'abgelehnt' gesetzt");
+    }
+  }
+
 }
