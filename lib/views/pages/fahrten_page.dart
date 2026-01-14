@@ -1,15 +1,19 @@
-// fahrten_page.dart
 import 'package:flutter/material.dart';
+import 'package:my_app/views/widgets/glass_page_widget.dart';
+import 'package:my_app/views/widgets/push_glass_widget.dart';
+import 'package:my_app/views/widgets/ui_overlay_state.dart';
 import 'package:provider/provider.dart';
-import 'dart:ui';
 
 import 'package:my_app/data/fahrt_service.dart';
 import 'package:my_app/data/anfrage_service.dart';
 import 'package:my_app/data/anfrage_daten.dart';
+import 'package:my_app/data/fahrt_daten.dart';
 import 'package:my_app/data/user_service.dart';
+import 'package:my_app/data/chat_service.dart';
+
 import 'package:my_app/views/widgets/background_widget.dart';
 import 'package:my_app/views/widgets/fahrtencard_widget.dart';
-import 'package:my_app/data/fahrt_daten.dart';
+import 'package:my_app/views/pages/chat_page.dart';
 
 class MeineFahrtenPage extends StatelessWidget {
   const MeineFahrtenPage({super.key});
@@ -17,51 +21,43 @@ class MeineFahrtenPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userData = UserService().getCurrentUser();
-    final userId = userData['id']!;
+    final userId = userData != null ? userData.id : '';
 
     return DefaultTabController(
       length: 2,
-      child: Stack(
-        children: [
-          AppBackground(child: Container()),
-          Container(color: Colors.black.withOpacity(0.4)),
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: Container(color: Colors.transparent),
-          ),
-          Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Column(
-              children: [
-                const SizedBox(height: 8),
-                const TabBar(
-                  indicatorColor: Colors.amber,
-                  labelColor: Colors.white,
-                  unselectedLabelColor: Colors.white70,
-                  tabs: [
-                    Tab(text: "Angeboten"),
-                    Tab(text: "Angefragt"),
+      child: AppBackground(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Column(
+            children: [
+              const TabBar(
+                indicatorColor: Colors.amber,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                tabs: [
+                  Tab(text: "Angeboten"),
+                  Tab(text: "Angefragt"),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _AngeboteneFahrtenTab(userId: userId),
+                    _AngefragteFahrtenTab(userId: userId),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      _AngeboteneFahrtenTab(userId: userId),
-                      _AngefragteFahrtenTab(userId: userId),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
+/// ------------------------------------------------------------
 /// TAB 1 – deine angebotenen Fahrten
+/// ------------------------------------------------------------
 class _AngeboteneFahrtenTab extends StatelessWidget {
   final String userId;
 
@@ -70,11 +66,11 @@ class _AngeboteneFahrtenTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<FahrtService>(
-      builder: (context, fahrtService, child) {
+      builder: (context, fahrtService, _) {
         final meineFahrten = fahrtService.getFahrtenByUser(userId);
 
         if (meineFahrten.isEmpty) {
-          return _EmptyState(
+          return const _EmptyState(
             icon: Icons.directions_car_filled_outlined,
             title: "Noch keine Fahrten erstellt",
             subtitle: "Erstelle eine Fahrt,\num Mitfahrende zu finden.",
@@ -85,9 +81,8 @@ class _AngeboteneFahrtenTab extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 120),
           itemCount: meineFahrten.length,
           itemBuilder: (context, index) {
-            final fahrt = meineFahrten[index];
             return FahrtenCard(
-              fahrt: fahrt,
+              fahrt: meineFahrten[index],
               isEditable: true,
             );
           },
@@ -97,15 +92,9 @@ class _AngeboteneFahrtenTab extends StatelessWidget {
   }
 }
 
-/// Hilfsklasse: Anfrage + (ggf.) zugehörige Fahrt
-class _RequestedRideItem {
-  final AnfrageDaten anfrage;
-  final FahrtDaten? fahrt; // null = Fahrt gelöscht
-
-  _RequestedRideItem(this.anfrage, this.fahrt);
-}
-
-/// TAB 2 – Fahrten, bei denen du MITFAHRER bist
+/// ------------------------------------------------------------
+/// TAB 2 – Fahrten, bei denen du Mitfahrer bist
+/// ------------------------------------------------------------
 class _AngefragteFahrtenTab extends StatelessWidget {
   final String userId;
 
@@ -114,10 +103,10 @@ class _AngefragteFahrtenTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer2<AnfrageService, FahrtService>(
-      builder: (context, anfrageService, fahrtService, child) {
+      builder: (context, anfrageService, fahrtService, _) {
         final anfragen = anfrageService.getAnfragenByRequester(userId);
 
-        final List<_RequestedRideItem> items = anfragen.map((a) {
+        final items = anfragen.map((a) {
           FahrtDaten? fahrt;
           try {
             fahrt = fahrtService.alleFahrten.firstWhere(
@@ -130,7 +119,7 @@ class _AngefragteFahrtenTab extends StatelessWidget {
         }).toList();
 
         if (items.isEmpty) {
-          return _EmptyState(
+          return const _EmptyState(
             icon: Icons.chat_bubble_outline,
             title: "Noch keine Mitfahranfragen",
             subtitle: "Suche dir eine Fahrt aus\nund sende eine Anfrage.",
@@ -158,7 +147,19 @@ class _AngefragteFahrtenTab extends StatelessWidget {
   }
 }
 
-/// Card für "angefragte" Fahrten (Fahrt existiert noch)
+/// ------------------------------------------------------------
+/// Helper: Anfrage + Fahrt
+/// ------------------------------------------------------------
+class _RequestedRideItem {
+  final AnfrageDaten anfrage;
+  final FahrtDaten? fahrt;
+
+  _RequestedRideItem(this.anfrage, this.fahrt);
+}
+
+/// ------------------------------------------------------------
+/// Card: angefragte Fahrt (MITFAHRER) + CHAT
+/// ------------------------------------------------------------
 class _RequestedRideCard extends StatelessWidget {
   final FahrtDaten fahrt;
   final AnfrageDaten anfrage;
@@ -190,72 +191,38 @@ class _RequestedRideCard extends StatelessWidget {
     }
   }
 
-  // --- Helper: baut die Strecken-Zeile mit schönem Pfeil ---
-  Widget _buildRouteRow(BuildContext context) {
-  // Start/Ziel abhängig von Richtung
-  final left = fahrt.richtung == Fahrtrichtung.rueckfahrt
-      ? fahrt.standort
-      : fahrt.abfahrtsort;
+  /// 🔑 CHAT ÖFFNEN (MITFAHRER → FAHRER)
+  Future<void> _openChat(BuildContext context) async {
+    final chatService = context.read<ChatService>();
+    final user = UserService().safeUser;
 
-  final right = fahrt.richtung == Fahrtrichtung.rueckfahrt
-      ? fahrt.abfahrtsort
-      : fahrt.standort;
+    final conversation = await chatService.ensureConversation(
+      fahrtId: fahrt.id,
+      ownerId: fahrt.ownerId,
+      requesterId: anfrage.requesterId,
+      eventName: fahrt.eventName,
+      startOrt: fahrt.abfahrtsort,
+      zielOrt: fahrt.standort,
+      seatsRequested: anfrage.seatsRequested,
+    );
 
-  // EXAKT DIESE ICONS WIE BEI ANGEBOTENEN FAHRTEN
-  final IconData arrowIcon;
-  switch (fahrt.richtung) {
-    case Fahrtrichtung.hinfahrt:
-      arrowIcon = Icons.arrow_right_alt_rounded;
-      break;
-    case Fahrtrichtung.rueckfahrt:
-      arrowIcon = Icons.arrow_right_alt_rounded;
-      break;
-    case Fahrtrichtung.hinUndZurueck:
-      arrowIcon = Icons.compare_arrows_rounded;
-      break;
+    await chatService.updateSystemMessage(
+      conversationId: conversation.id,
+      eventName: fahrt.eventName,
+      startOrt: fahrt.abfahrtsort,
+      zielOrt: fahrt.standort,
+      seatsRequested: anfrage.seatsRequested,
+      seatsAccepted: anfrage.seatsAccepted ?? 0,
+    );
+
+
+    if (!context.mounted) return;
+
+   context.read<UiOverlayState>().openChat(
+      conversationId: conversation.id,
+      otherUserName: anfrage.requesterName,
+    );
   }
-
-  return Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Flexible(
-        child: Text(
-          left,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-
-      const SizedBox(width: 6),
-
-      Icon(
-        arrowIcon,
-        color: Colors.white70,
-        size: 22, // gleiche Größe wie in der FahrtenCard
-      ),
-
-      const SizedBox(width: 6),
-
-      Flexible(
-        child: Text(
-          right,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    ],
-  );
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +237,7 @@ class _RequestedRideCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Titel + Status Badge
+            /// Titel + Status + Chat
             Row(
               children: [
                 Expanded(
@@ -284,7 +251,6 @@ class _RequestedRideCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 8),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -301,76 +267,28 @@ class _RequestedRideCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // Strecke (neuer schöner Pfeil zwischen Start/Ziel)
-            _buildRouteRow(context),
-
-            const SizedBox(height: 6),
-
-            // Zeit rechts (bleibt wie gehabt) — in einer Row mit Icon
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 16, color: Colors.amberAccent),
-                const SizedBox(width: 6),
-                Text(
-                  fahrt.uhrzeit.format(context),
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline,
+                      color: Colors.white),
+                  onPressed: () => _openChat(context),
                 ),
               ],
             ),
 
             const SizedBox(height: 8),
 
-            // Deine angefragten / akzeptierten Plätze
+            /// Plätze
             Row(
               children: [
-                const Icon(Icons.event_seat, size: 16, color: Colors.redAccent),
+                const Icon(Icons.event_seat,
+                    size: 16, color: Colors.redAccent),
                 const SizedBox(width: 6),
-
-                Builder(
-                  builder: (context) {
-                    final accepted = anfrage.seatsAccepted;
-
-                    if (anfrage.status == AnfrageStatus.akzeptiert) {
-                      if (accepted != null) {
-                        // z. B. "2 von 3 Plätzen akzeptiert"
-                        return Text(
-                          "$accepted von ${anfrage.seatsRequested} Platz"
-                          "${anfrage.seatsRequested > 1 ? "en" : ""} akzeptiert",
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      } else {
-                        // Fallback für alte Daten ohne seatsAccepted
-                        return Text(
-                          "${anfrage.seatsRequested} Platz"
-                          "${anfrage.seatsRequested > 1 ? "e" : ""} akzeptiert",
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      }
-                    }
-
-                    // Status: offen oder abgelehnt → nur "angefragt"
-                    return Text(
-                      "${anfrage.seatsRequested} Platz"
-                      "${anfrage.seatsRequested > 1 ? "e" : ""} angefragt",
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    );
-                  },
+                Text(
+                  anfrage.status == AnfrageStatus.akzeptiert &&
+                          anfrage.seatsAccepted != null
+                      ? "${anfrage.seatsAccepted} von ${anfrage.seatsRequested} Plätzen akzeptiert"
+                      : "${anfrage.seatsRequested} Plätze angefragt",
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ],
             ),
@@ -386,10 +304,9 @@ class _RequestedRideCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 2),
               Text(
                 anfrage.message!,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(color: Colors.white),
               ),
             ],
           ],
@@ -399,7 +316,9 @@ class _RequestedRideCard extends StatelessWidget {
   }
 }
 
-/// Card für Anfragen, deren Fahrt gelöscht wurde
+/// ------------------------------------------------------------
+/// Card: Fahrt gelöscht
+/// ------------------------------------------------------------
 class _RequestedRideDeletedCard extends StatelessWidget {
   final AnfrageDaten anfrage;
 
@@ -418,54 +337,36 @@ class _RequestedRideDeletedCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: const [
-                Icon(
-                  Icons.report_gmailerrorred,
-                  color: Colors.redAccent,
-                  size: 22,
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Fahrt wurde gelöscht",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "Der Fahrer hat diese Fahrt entfernt. "
-              "Deine Mitfahranfrage ist damit nicht mehr gültig.",
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
+            Text(
+              anfrage.eventName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(height: 6),
+
             Row(
               children: [
-                const Icon(
-                  Icons.event_seat,
-                  size: 16,
-                  color: Colors.redAccent,
-                ),
+                const Icon(Icons.route, size: 16, color: Colors.white70),
                 const SizedBox(width: 6),
                 Text(
-                  "${anfrage.seatsRequested} Platz"
-                  "${anfrage.seatsRequested > 1 ? "e" : ""} waren angefragt",
-                  style: const TextStyle(
-                    color: Colors.white54,
-                    fontSize: 13,
-                  ),
+                  "${anfrage.startOrt} → ${anfrage.zielOrt}",
+                  style: const TextStyle(color: Colors.white70),
                 ),
               ],
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              "Fahrt wurde gelöscht",
+              style: TextStyle(
+                color: Colors.redAccent.withOpacity(0.9),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -474,6 +375,10 @@ class _RequestedRideDeletedCard extends StatelessWidget {
   }
 }
 
+
+/// ------------------------------------------------------------
+/// Empty State
+/// ------------------------------------------------------------
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -491,30 +396,15 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 64,
-            color: Colors.white.withOpacity(0.5),
-          ),
+          Icon(icon, size: 64, color: Colors.white54),
           const SizedBox(height: 16),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 18)),
           const SizedBox(height: 8),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 14,
-            ),
-          ),
+          Text(subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70)),
         ],
       ),
     );

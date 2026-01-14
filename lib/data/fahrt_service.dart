@@ -1,70 +1,58 @@
 // fahrt_service.dart
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
-import 'package:my_app/data/fahrt_daten.dart';
+import 'fahrt_daten.dart';
+import 'fahrt_repository.dart';
 
 class FahrtService with ChangeNotifier {
-  static final FahrtService _instance = FahrtService._internal();
-  factory FahrtService() => _instance;
+  final FahrtRepository _repo;
 
-  FahrtService._internal() {
-    _init();
-  }
+  FahrtService(this._repo);
 
-  late Box<FahrtDaten> _fahrtenBox;
-  final List<FahrtDaten> _alleFahrten = [];
+  final List<FahrtDaten> _fahrten = [];
 
-  List<FahrtDaten> get alleFahrten => List.from(_alleFahrten);
+  List<FahrtDaten> get alleFahrten => List.unmodifiable(_fahrten);
 
-  Future<void> _init() async {
-    _fahrtenBox = Hive.box<FahrtDaten>('fahrten');
-    _loadFahrten();
-  }
-
-  void _loadFahrten() {
-    _alleFahrten.clear();
-    _alleFahrten.addAll(_fahrtenBox.values);
+  /// Initiales Laden (einmal beim App-Start aufrufen)
+  Future<void> load() async {
+    _fahrten
+      ..clear()
+      ..addAll(_repo.getAll());
+    _sort();
     notifyListeners();
   }
 
-  Future<void> addFahrt(FahrtDaten fahrt) async {
-    await _fahrtenBox.add(fahrt);
-    _loadFahrten();
-    if (kDebugMode) print("Fahrt hinzugefügt! Gesamte Fahrten: ${_alleFahrten.length}");
+  Future<void> add(FahrtDaten fahrt) async {
+    await _repo.add(fahrt);
+    _fahrten.add(fahrt);
+    _sort();
+    notifyListeners();
   }
 
-  Future<void> updateFahrt(String id, FahrtDaten updated) async {
-    try {
-      final map = _fahrtenBox.toMap();
-      final entry = map.entries.firstWhere((e) => e.value.id == id);
-      await _fahrtenBox.put(entry.key, updated);
-      _loadFahrten();
-      if (kDebugMode) print('Fahrt mit id=$id aktualisiert');
-    } catch (e) {
-      if (kDebugMode) print('updateFahrt: Eintrag mit id=$id nicht gefunden: $e');
-      // optional: fallback - kein throw, nur log
+  Future<void> update(FahrtDaten fahrt) async {
+    await _repo.update(fahrt);
+    final index = _fahrten.indexWhere((f) => f.id == fahrt.id);
+    if (index != -1) {
+      _fahrten[index] = fahrt;
     }
+    _sort();
+    notifyListeners();
   }
 
-  List<FahrtDaten> getFahrtenByUser(String userId) => _alleFahrten.where((f) => f.ownerId == userId).toList();
-  List<FahrtDaten> getFahrtenByEvent(String eventId) => _alleFahrten.where((f) => f.eventId == eventId).toList();
+  Future<void> delete(String id) async {
+    await _repo.delete(id);
+    _fahrten.removeWhere((f) => f.id == id);
+    notifyListeners();
+  }
 
-  //! deleteFahrt
-  Future<void> deleteFahrt(String id) async {
-    try {
-      final map = _fahrtenBox.toMap(); // key -> FahrtDaten
-      final entry = map.entries.firstWhere((e) => e.value.id == id);
+  List<FahrtDaten> getFahrtenByUser(String userId) {
+    return _fahrten.where((f) => f.ownerId == userId).toList();
+  }
 
-      await _fahrtenBox.delete(entry.key);
-      _loadFahrten();
+  List<FahrtDaten> getFahrtenByEvent(String eventId) {
+    return _fahrten.where((f) => f.eventId == eventId).toList();
+  }
 
-      if (kDebugMode) {
-        print('🗑️ Fahrt mit id=$id gelöscht');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ deleteFahrt: Eintrag mit id=$id nicht gefunden: $e');
-      }
-    }
+  void _sort() {
+    _fahrten.sort((a, b) => a.uhrzeitHour.compareTo(b.uhrzeitHour));
   }
 }

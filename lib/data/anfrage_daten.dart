@@ -48,6 +48,19 @@ class AnfrageDaten {
   @HiveField(10)
   final int? seatsAccepted; // Anzahl der akzeptierten Sitze
 
+  @HiveField(11)
+  final String eventName;
+
+  @HiveField(12)
+  final String startOrt;
+
+  @HiveField(13)
+  final String zielOrt;
+
+  @HiveField(14)
+  final String fahrerName;
+  
+
   AnfrageDaten({
     required this.id,
     required this.fahrtId,
@@ -60,6 +73,10 @@ class AnfrageDaten {
     required this.fahrtOwnerId,
     this.message,
     this.seatsAccepted,
+    required this.eventName,
+    required this.startOrt,
+    required this.zielOrt,
+    required this.fahrerName,
   });
 
   factory AnfrageDaten.create({
@@ -69,6 +86,12 @@ class AnfrageDaten {
     required String requesterName,
     required int seatsRequested,
     required String fahrtOwnerId,
+    // 🔥 Snapshot-Daten
+    required String eventName,
+    required String startOrt,
+    required String zielOrt,
+    required String fahrerName,
+    
     String? message,
   }) {
     return AnfrageDaten(
@@ -83,6 +106,10 @@ class AnfrageDaten {
       fahrtOwnerId: fahrtOwnerId,
       message: message,
       seatsAccepted: null,
+      eventName: eventName,
+      startOrt: startOrt,
+      zielOrt: zielOrt,
+      fahrerName: fahrerName,
     );
   }
 
@@ -102,6 +129,10 @@ class AnfrageDaten {
       message: message,
       fahrtOwnerId: fahrtOwnerId,
       seatsAccepted: seatsAccepted ?? this.seatsAccepted,
+      eventName: eventName,
+      startOrt: startOrt,
+      zielOrt: zielOrt,
+      fahrerName: fahrerName,
     );
   }
 }

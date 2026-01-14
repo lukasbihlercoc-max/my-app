@@ -1,12 +1,12 @@
 // events_page.dart
 import 'package:flutter/material.dart';
+import 'package:my_app/views/widgets/app_snackbar.dart';
+import 'package:provider/provider.dart';
 import 'package:my_app/data/event_daten.dart';
-import 'package:my_app/data/notifiers.dart';
+import 'package:my_app/data/event_service.dart';
 import 'package:intl/intl.dart';
-import 'package:my_app/main.dart';
 import 'package:my_app/views/widgets/background_widget.dart';
 
-//! Eingabefelder anpassen
 InputDecoration getInputStyle(String label) {
   return InputDecoration(
     labelText: label,
@@ -18,26 +18,25 @@ InputDecoration getInputStyle(String label) {
     enabledBorder: const OutlineInputBorder(
       borderSide: BorderSide(
         color: Colors.white70,
-        width: 2, // ✅ normale Linienstärke
+        width: 2,
       ),
       borderRadius: BorderRadius.all(Radius.circular(12)),
     ),
     focusedBorder: const OutlineInputBorder(
       borderSide: BorderSide(
         color: Colors.deepPurpleAccent,
-        width: 4, // ✅ dickere Linie beim Fokus
+        width: 4,
       ),
       borderRadius: BorderRadius.all(Radius.circular(12)),
     ),
     contentPadding: const EdgeInsets.symmetric(
       vertical: 20,
       horizontal: 16,
-    ), // ✅ mehr Platz im Feld
+    ),
     hintStyle: const TextStyle(color: Colors.white38, fontSize: 14),
   );
 }
 
-//! Eingabeschrift anpassen
 const inputTextStyle = TextStyle(
   color: Colors.white,
   fontSize: 20,
@@ -45,8 +44,7 @@ const inputTextStyle = TextStyle(
 );
 
 class EventsPage extends StatefulWidget {
-  
-  final Event? event;             //!optionales Event bearbeiten
+  final Event? event; // optional: edit existing
   const EventsPage({super.key, required this.event});
 
   @override
@@ -61,12 +59,11 @@ class _EventsPageState extends State<EventsPage> {
   final beschreibungController = TextEditingController();
   final adresseController = TextEditingController();
 
-
   @override
-  void initState()  {
+  void initState() {
     super.initState();
 
-    if(widget.event  != null) {
+    if (widget.event != null) {
       NameController.text = widget.event!.name;
       standortController.text = widget.event!.standort;
       datumController.text = DateFormat("dd.MM.yyyy").format(widget.event!.datum);
@@ -76,7 +73,7 @@ class _EventsPageState extends State<EventsPage> {
     }
   }
 
-    @override
+  @override
   void dispose() {
     NameController.dispose();
     standortController.dispose();
@@ -84,6 +81,75 @@ class _EventsPageState extends State<EventsPage> {
     beschreibungController.dispose();
     adresseController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveEvent() async {
+    // Datum validieren
+    if (datumController.text.trim().isEmpty) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        context,
+        message: "Bitte ein Datum auswählen",
+      );
+      return;
+    }
+
+    try {
+      final parsedDate =
+          DateFormat("dd.MM.yyyy").parseStrict(datumController.text);
+
+      final eventService = context.read<EventService>();
+
+
+      if (widget.event == null) {
+        // Neues Event erstellen
+        final newEvent = Event(
+          name: NameController.text.trim().isEmpty
+              ? "Unbenanntes Event"
+              : NameController.text.trim(),
+          datum: parsedDate,
+          standort: standortController.text.isNotEmpty
+              ? standortController.text.trim()
+              : "Unbekannt",
+          typ: typ ?? "e0",
+          beschreibung: beschreibungController.text.trim(),
+          adresse: adresseController.text.trim().isNotEmpty
+              ? adresseController.text.trim()
+              : "Adresse nicht angegeben",
+        );
+
+        await eventService.add(newEvent);
+      } else {
+        // Bestehendes Event: immutable update via copyWith
+        final updatedEvent = widget.event!.copyWith(
+          name: NameController.text.trim().isEmpty
+              ? widget.event!.name
+              : NameController.text.trim(),
+          datum: parsedDate,
+          standort: standortController.text.trim().isNotEmpty
+              ? standortController.text.trim()
+              : widget.event!.standort,
+          typ: typ ?? widget.event!.typ,
+          beschreibung: beschreibungController.text.trim(),
+          adresse: adresseController.text.trim().isNotEmpty
+              ? adresseController.text.trim()
+              : widget.event!.adresse,
+        );
+
+        await eventService.update(updatedEvent);
+
+
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        context,
+        message: "Ungültiges Datumformat",
+      );
+    }
   }
 
   @override
@@ -100,7 +166,7 @@ class _EventsPageState extends State<EventsPage> {
         ),
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0), // ✅ Korrigiert: const EdgeInsets.all(16.0)
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
                 TextField(
@@ -108,27 +174,23 @@ class _EventsPageState extends State<EventsPage> {
                   style: inputTextStyle,
                   decoration: getInputStyle("Eventname"),
                 ),
-          
                 const SizedBox(height: 16),
-          
-                // Ersetze das TextField für das Datum durch:
-TextFormField(
+                TextFormField(
                   controller: datumController,
                   style: inputTextStyle,
                   decoration: getInputStyle("Datum"),
-                  readOnly: true, // Verhindert Tastatureingabe
+                  readOnly: true,
                   onTap: () async {
                     DateTime? pickedDate = await showDatePicker(
                       context: context,
-                      initialDate: DateTime.now(),
+                      initialDate: widget.event?.datum ?? DateTime.now(),
                       firstDate: DateTime(2000),
                       lastDate: DateTime(2100),
                       locale: const Locale('de', 'DE'),
                     );
                     if (pickedDate != null) {
-                      String formattedDate = DateFormat(
-                        'dd.MM.yyyy',
-                      ).format(pickedDate);
+                      String formattedDate =
+                          DateFormat('dd.MM.yyyy').format(pickedDate);
                       setState(() {
                         datumController.text = formattedDate;
                       });
@@ -141,30 +203,24 @@ TextFormField(
                     return null;
                   },
                 ),
-          
                 const SizedBox(height: 16),
-          
                 TextField(
                   controller: standortController,
                   style: inputTextStyle,
                   decoration: getInputStyle("Standort"),
                 ),
-          
                 const SizedBox(height: 16),
-
                 TextField(
                   controller: adresseController,
                   style: inputTextStyle,
                   decoration: getInputStyle("genaue Adresse"),
                 ),
-          
                 const SizedBox(height: 16),
-          
                 DropdownButton(
-                  dropdownColor: Color.fromARGB(164, 9, 61, 216),
+                  dropdownColor: const Color.fromARGB(164, 9, 61, 216),
                   style: inputTextStyle,
                   value: typ,
-                  items: [
+                  items: const [
                     DropdownMenuItem(value: "e0", child: Text("Standart")),
                     DropdownMenuItem(value: "e1", child: Text("Kirchtag")),
                     DropdownMenuItem(value: "e2", child: Text("Feuerwehrfest")),
@@ -178,9 +234,7 @@ TextFormField(
                     });
                   },
                 ),
-          
                 const SizedBox(height: 16),
-          
                 TextField(
                   controller: beschreibungController,
                   style: inputTextStyle,
@@ -189,70 +243,9 @@ TextFormField(
                   maxLines: null,
                   textInputAction: TextInputAction.newline,
                 ),
-          
                 const SizedBox(height: 20),
-          
                 FilledButton(
-                  onPressed: () async {
-                    // Datum validieren BEVOR du versuchst es zu parsen
-                    if (datumController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Bitte ein Datum auswählen")),
-                      );
-                      return; // ✅ Wichtig: Hier returnen!
-                    }
-
-                    try {
-                      final parsedDate = DateFormat("dd.MM.yyyy").parseStrict(datumController.text);
-
-                      if (widget.event == null) {
-                        // ✅ Neues Event erstellen
-                        final newEvent = Event(
-                          name: NameController.text,
-                          datum: parsedDate,
-                          standort: standortController.text.isNotEmpty
-                              ? standortController.text
-                              : "Unbekannt",
-                          typ: typ.toString(),
-                          beschreibung: beschreibungController.text,
-                          adresse: adresseController.text.trim().isNotEmpty
-                              ? adresseController.text.trim()
-                              : "Adresse nicht angegeben",
-                        );
-                        
-                        //Debug-Ausgabe der stabilen ID
-                        print("🆕 DEBUG: Event erstellt mit stabiler ID: ${newEvent.stabileId}");
-                    
-                        await speichereEvent(newEvent);
-                    
-                        eventListNotifier.value = [
-                          ...eventListNotifier.value,
-                          newEvent,
-                        ]..sort((a, b) => a.datum.compareTo(b.datum));
-                      } else {
-                        // ✅ Bestehendes Event bearbeiten
-                        widget.event!
-                          ..name = NameController.text
-                          ..datum = parsedDate
-                          ..standort = standortController.text
-                          ..typ = typ.toString()
-                          ..beschreibung = beschreibungController.text
-                          ..adresse = adresseController.text;
-                    
-                        await widget.event!.save(); // Hive aktualisieren
-                    
-                        eventListNotifier.value = [
-                          ...eventListNotifier.value,
-                        ]..sort((a, b) => a.datum.compareTo(b.datum));
-                      }
-                    
-                      Navigator.pop(context);
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Ungültiges Datumsformat")),
-                      );
-                    }
-                  },
+                  onPressed: _saveEvent,
                   child: Text(widget.event == null ? "Event abspeichern" : "Änderungen speichern"),
                 ),
               ],

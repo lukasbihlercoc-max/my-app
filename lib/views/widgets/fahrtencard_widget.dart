@@ -1,6 +1,9 @@
 // fahrtencard_widget.dart
 import 'package:flutter/material.dart';
+import 'package:my_app/data/fahrt_anfrage_service.dart';
 import 'package:my_app/data/fahrt_service.dart';
+import 'package:my_app/views/widgets/app_snackbar.dart';
+import 'package:my_app/views/widgets/ui_overlay_state.dart';
 import 'package:provider/provider.dart';
 
 import 'package:my_app/data/fahrt_daten.dart';
@@ -37,6 +40,9 @@ class FahrtenCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fahrtService = context.read<FahrtService>();
+    final anfrageService = context.read<AnfrageService>();
+
     // 🆕 Anzahl offener Anfragen für diese Fahrt
     final offeneAnfragenCount = context
         .watch<AnfrageService>()
@@ -110,13 +116,7 @@ class FahrtenCard extends StatelessWidget {
                                   size: 30,
                                 ),
                                 onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          FahrtAnfragenPage(fahrt: fahrt),
-                                    ),
-                                  );
+                                  context.read<UiOverlayState>().openFahrtAnfragen(fahrt);
                                 },
                               ),
 
@@ -624,7 +624,7 @@ GestureDetector(
   //! Mitfahr-Fenster
 
 void _handleMitfahren(BuildContext context) async {
-  final user = UserService().getCurrentUser();
+  final user = UserService().safeUser;
   final messageController = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
@@ -890,22 +890,47 @@ void _handleMitfahren(BuildContext context) async {
   final anfrage = AnfrageDaten.create(
     fahrtId: fahrt.id,
     eventId: fahrt.eventId,
-    requesterId: user['id']!,
-    requesterName: user['name']!,
+    requesterId: user.id,
+    requesterName: user.name,
     seatsRequested: seats,
     fahrtOwnerId: fahrt.ownerId,
+
+      // 🔥 SNAPSHOT-DATEN (NEU)
+      eventName: fahrt.eventName,
+      startOrt: fahrt.abfahrtsort,
+      zielOrt: fahrt.standort,
+      fahrerName: fahrt.ownerName,
+
     message: messageController.text.trim().isEmpty
         ? null
         : messageController.text.trim(),
   );
 
-  await AnfrageService().addAnfrage(anfrage);
+    final rideRequestService = context.read<RideRequestService>();
+    final success = await rideRequestService.sendRequest(
+      fahrt: fahrt,
+      seats: selectedSeats,
+      message: messageController.text.trim().isEmpty
+          ? null
+          : messageController.text.trim(),
+    );
+
+
+if (!success) {
+  AppSnackbar.show(
+        context,
+        message: "Du hast bereits angefragt!",
+      );
+  return;
+}
+
 
   if (!context.mounted) return;
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Anfrage wurde gesendet")),
-  );
+  AppSnackbar.show(
+        context,
+        message: "Anfrage wurde gesendet",
+      );
 }
 
 
@@ -1019,12 +1044,13 @@ void _handleMitfahren(BuildContext context) async {
   await anfrageService.cancelAnfragenForFahrt(fahrt.id);
 
   // 2) Fahrt löschen
-  await fahrtService.deleteFahrt(fahrt.id);
+  await fahrtService.delete(fahrt.id);
 
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Fahrt wurde gelöscht")),
-  );
+  AppSnackbar.show(
+        context,
+        message: "Fahrt wurde gelöscht",
+      );
 }
 }
 

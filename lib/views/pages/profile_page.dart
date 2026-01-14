@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/views/pages/login_page.dart';
 import 'package:my_app/views/pages/register_page.dart';
+import 'package:my_app/views/widgets/app_snackbar.dart';
 import 'package:my_app/views/widgets/background_widget.dart';
 import 'package:my_app/data/user_service.dart';
 
@@ -239,9 +240,10 @@ class _LoggedInProfileViewState extends State<LoggedInProfileView> {
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Wohnort gespeichert")),
-    );
+    AppSnackbar.show(
+        context,
+        message: "Wohnort gespeichert",
+      );
   }
 
   @override

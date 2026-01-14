@@ -2,13 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/data/notifiers.dart';
 import 'package:my_app/views/pages/events_page.dart';
+import 'package:my_app/views/pages/fahrt_anfragen_page.dart';
 import 'package:my_app/views/pages/fahrten_page.dart';
 import 'package:my_app/views/pages/home_page.dart';
 import 'package:my_app/views/pages/profile_page.dart';
 import 'package:my_app/views/pages/settings_page.dart';
 import 'package:my_app/views/widgets/appbar_widget.dart';
 import 'package:my_app/views/widgets/background_widget.dart';
+import 'package:my_app/views/widgets/chat_overlay.dart';
 import 'package:my_app/views/widgets/navbar_widget.dart';
+import 'package:my_app/views/widgets/ui_overlay_state.dart';
 
 // 🆕 PROVIDER IMPORT HINZUFÜGEN
 import 'package:provider/provider.dart';
@@ -56,25 +59,38 @@ class WidgetTree extends StatelessWidget {
                 ),
               ),
 
-              // Floating Action Button - 🟡 UNVERÄNDERT
-              Positioned(
-                bottom: 110,
-                right: 24,
-                child: FloatingActionButton(
-                  backgroundColor: const Color.fromARGB(134, 51, 85, 234),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EventsPage(event: null),
+              // 🔥 CHAT OVERLAY
+              Consumer<UiOverlayState>(
+                builder: (context, ui, _) {
+                  if (!ui.isFahrtAnfragenOpen) return const SizedBox.shrink();
+
+                  return Material(
+                    color: Colors.black.withOpacity(0.4),
+                    child: SafeArea(
+                      child: Column(
+                        children: [
+                          AppBar(
+                            backgroundColor: Colors.transparent,
+                            elevation: 0,
+                            leading: IconButton(
+                              icon: const Icon(Icons.arrow_back),
+                              onPressed: () => context
+                                  .read<UiOverlayState>()
+                                  .closeFahrtAnfragen(),
+                            ),
+                            title: const Text("Anfragen"),
+                          ),
+                          Expanded(
+                            child: FahrtAnfragenPage(fahrt: ui.activeFahrt!),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  child: const Icon(Icons.add),
-                ),
+                    ),
+                  );
+                },
               ),
 
-              // Navigationsleiste - 🟡 UNVERÄNDERT
+
               Positioned(
                 bottom: 16,
                 left: 16,
@@ -83,6 +99,7 @@ class WidgetTree extends StatelessWidget {
               ),
             ],
           );
+
         },
       ),
     );

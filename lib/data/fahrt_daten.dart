@@ -1,4 +1,4 @@
-// fahrt_daten.dart
+// lib/data/fahrt_daten.dart
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -28,6 +28,7 @@ class FahrtDaten {
   @HiveField(3)
   final String abfahrtsort;
 
+  // Uhrzeit intern als separate hour/min ints -> einfach serialisierbar
   @HiveField(4)
   final int uhrzeitHour;
 
@@ -52,7 +53,7 @@ class FahrtDaten {
   @HiveField(11)
   final String ownerName;
 
-  // Neu: eindeutige ID für Update/Lookup
+  // Eindeutige, stabile ID (final)
   @HiveField(12)
   final String id;
 
@@ -100,7 +101,6 @@ class FahrtDaten {
       ownerName: ownerName,
       id: id ?? DateTime.now().millisecondsSinceEpoch.toString(),
     );
-    
   }
 
   TimeOfDay get uhrzeit => TimeOfDay(hour: uhrzeitHour, minute: uhrzeitMinute);
@@ -110,13 +110,14 @@ class FahrtDaten {
     return TimeOfDay(hour: rueckuhrzeitHour!, minute: rueckuhrzeitMinute!);
   }
 
-  // kompatible Getter (falls im Projekt ältere Namen genutzt werden)
+  // kompatible Getter
   String get startOrt => abfahrtsort;
   String get zielOrt => standort;
   int get plaetze => freiePlaetze;
   String get anbieter => ownerName;
   String get stabileId => eventId;
-    FahrtDaten copyWith({
+
+  FahrtDaten copyWith({
     String? eventId,
     String? eventName,
     String? standort,
@@ -148,4 +149,58 @@ class FahrtDaten {
     );
   }
 
+  /// Serialisierung (für Firestore/JSON)
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'eventId': eventId,
+      'eventName': eventName,
+      'standort': standort,
+      'abfahrtsort': abfahrtsort,
+      'uhrzeitHour': uhrzeitHour,
+      'uhrzeitMinute': uhrzeitMinute,
+      'rueckuhrzeitHour': rueckuhrzeitHour,
+      'rueckuhrzeitMinute': rueckuhrzeitMinute,
+      'freiePlaetze': freiePlaetze,
+      'richtung': richtung.index, // store enum as int
+      'ownerId': ownerId,
+      'ownerName': ownerName,
+    };
+  }
+
+  factory FahrtDaten.fromMap(Map<String, dynamic> map) {
+    // defensive parsing
+    int parseInt(dynamic v, [int defaultValue = 0]) {
+      if (v == null) return defaultValue;
+      if (v is int) return v;
+      if (v is String) return int.tryParse(v) ?? defaultValue;
+      return defaultValue;
+    }
+
+    final richtungIndex = parseInt(map['richtung'], 0);
+    final richtung = Fahrtrichtung.values
+        .elementAt(richtungIndex.clamp(0, Fahrtrichtung.values.length - 1));
+
+    return FahrtDaten(
+      eventId: map['eventId'] as String? ?? '',
+      eventName: map['eventName'] as String? ?? '',
+      standort: map['standort'] as String? ?? '',
+      abfahrtsort: map['abfahrtsort'] as String? ?? '',
+      uhrzeitHour: parseInt(map['uhrzeitHour']),
+      uhrzeitMinute: parseInt(map['uhrzeitMinute']),
+      rueckuhrzeitHour:
+          map.containsKey('rueckuhrzeitHour') ? parseInt(map['rueckuhrzeitHour'], null as int? ?? 0) : null,
+      // if absent, keep null
+      rueckuhrzeitMinute: map.containsKey('rueckuhrzeitMinute')
+          ? parseInt(map['rueckuhrzeitMinute'], null as int? ?? 0)
+          : null,
+      freiePlaetze: parseInt(map['freiePlaetze'], 0),
+      richtung: richtung,
+      ownerId: map['ownerId'] as String? ?? '',
+      ownerName: map['ownerName'] as String? ?? '',
+      id: map['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    );
+  }
+
+  String toJsonString() => toMap().toString();
 }

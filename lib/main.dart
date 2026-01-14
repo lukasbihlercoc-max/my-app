@@ -1,53 +1,112 @@
-// main.dart
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:my_app/data/app_user.dart';
+import 'package:my_app/data/chat_conversation.dart';
+import 'package:my_app/data/chat_message.dart';
+import 'package:my_app/data/chat_service.dart';
+import 'package:my_app/data/event_repository.dart';
+import 'package:my_app/data/event_service.dart';
+import 'package:my_app/data/fahrt_anfrage_service.dart';
 import 'package:my_app/data/fahrt_daten.dart';
 import 'package:my_app/data/notifiers.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+// Repositories
+import 'package:my_app/data/fahrt_repository.dart';
+import 'package:my_app/data/chat_repository.dart';
+
 // Hive
 import 'package:my_app/data/event_daten.dart';
+import 'package:my_app/data/user_service.dart';
+import 'package:my_app/views/widgets/ui_overlay_state.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:my_app/views/widget_tree.dart';
 import 'package:my_app/data/anfrage_daten.dart';
+
+// Services
 import 'package:my_app/data/anfrage_service.dart';
+import 'package:my_app/data/fahrt_service.dart';
 
-
-// 🆕 NEUE IMPORTS FÜR PROVIDER
-import 'package:provider/provider.dart'; // 🆕 Provider Package
-import 'package:my_app/data/fahrt_service.dart'; // 🆕 Unser FahrtService
+// Provider
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // wichtig für async init
-  await initializeDateFormatting('de_DE', null); // ✅ Locale-Daten laden
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('de_DE', null);
 
-  // 🔧 Hive initialisieren
+  // Hive initialisieren
   final dir = await getApplicationDocumentsDirectory();
   await Hive.initFlutter(dir.path);
-  Hive.registerAdapter(EventAdapter()); // oder EventAdapter, je nach Name
+
+  // Adapter registrieren
+  Hive.registerAdapter(EventAdapter());
   Hive.registerAdapter(FahrtDatenAdapter());
   Hive.registerAdapter(FahrtrichtungAdapter());
   Hive.registerAdapter(AnfrageStatusAdapter());
   Hive.registerAdapter(AnfrageDatenAdapter());
-  
-  //await Hive.deleteBoxFromDisk("events"); //! gespeicherte Events LÖSCHEN
-  //await Hive.deleteBoxFromDisk("fahrten"); //! gespeicherte Fahrten LÖSCHEN
-  //await Hive.deleteBoxFromDisk("anfragen"); //! gespeicherte Anfragen LÖSCHEN
 
+  Hive.registerAdapter(ChatMessageAdapter());
+  Hive.registerAdapter(ChatConversationAdapter());
+
+  // Boxen öffnen
   await Hive.openBox<Event>('events');
   await Hive.openBox<FahrtDaten>('fahrten');
   await Hive.openBox<AnfrageDaten>('anfragen');
+  await Hive.openBox<ChatConversation>('chat_conversations');
+  await Hive.openBox<ChatMessage>('chat_messages');
 
-  // 🔹 Favoriten laden & Listener registrieren
+  //await Hive.deleteBoxFromDisk("events"); //! gespeicherte Events LÖSCHEN
+  //await Hive.deleteBoxFromDisk("fahrten"); //! gespeicherte Fahrten LÖSCHEN
+  //await Hive.deleteBoxFromDisk("anfragen"); //! gespeicherte Anfragen LÖSCHEN
+  //await Hive.deleteBoxFromDisk("chat_conversations"); //! gespeicherte Chats LÖSCHEN
+  //await Hive.deleteBoxFromDisk("chat_messages"); //! gespeicherte Nachrichten LÖSCHEN
+
+  // Favoriten initialisieren
   await initFavouriteEvents();
 
-  runApp(const MyApp());
+  await UserService().loadUser();
+
+
+  // ----------------------------
+  // Services initialisieren
+  // ----------------------------
+
+  final anfrageService = AnfrageService();
+  await anfrageService.init();
+
+  final eventRepository =
+      EventRepository(Hive.box<Event>('events'));
+  final eventService = EventService(eventRepository);
+  await eventService.load();
+
+  final fahrtRepository =
+      FahrtRepository(Hive.box<FahrtDaten>('fahrten'));
+  final fahrtService = FahrtService(fahrtRepository);
+  await fahrtService.load();
+
+  // ✅ ChatRepository + ChatService (NEU, korrekt)
+  final chatRepository = ChatRepository(
+    Hive.box<ChatConversation>('chat_conversations'),
+    Hive.box<ChatMessage>('chat_messages'),
+  );
+  final chatService = ChatService(chatRepository);
+
+  // App starten
+  runApp(MyApp(
+    eventService: eventService,
+    fahrtService: fahrtService,
+    anfrageService: anfrageService,
+    chatService: chatService,
+  ));
 }
 
 Future<void> speichereEvent(Event event) async {
   final box = Hive.box<Event>('events');
-  await box.add(event);
+  await box.put(event.id, event);
 }
 
 Future<List<Event>> ladeAlleEvents() async {
@@ -55,8 +114,20 @@ Future<List<Event>> ladeAlleEvents() async {
   return box.values.toList();
 }
 
+
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final EventService eventService;
+  final FahrtService fahrtService;
+  final AnfrageService anfrageService;
+  final ChatService chatService; // ✅ NEU
+
+  const MyApp({
+    super.key,
+    required this.eventService,
+    required this.fahrtService,
+    required this.anfrageService,
+    required this.chatService,
+  });
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -65,41 +136,44 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    // 🆕 MULTIPROVIDER - ERSTER GROSSER ÄNDERUNGSPUNKT
-    // Statt direkt ValueListenableBuilder verwenden wir jetzt MultiProvider
-    // um mehrere Provider zu verwalten
     return MultiProvider(
       providers: [
-        // 🟡 BEREITS EXISTIEREND: Dark Mode Provider (wird umgewandelt)
-        // Vorher: ValueListenableBuilder direkt um MaterialApp
-        // Jetzt: Als ValueListenableProvider in MultiProvider
         ValueListenableProvider<bool>.value(
-          value: isDarkModeNotifier, // Ihr bestehender Dark Mode Notifier
-        ),
-        
-        // 🆕 NEU: FahrtService Provider - ZWEITER GROSSER ÄNDERUNGSPUNKT
-        // Dieser Provider macht den FahrtService im gesamten App verfügbar
-        ChangeNotifierProvider<FahrtService>(
-          create: (context) => FahrtService(), // Erstellt eine Instanz des FahrtService
+          value: isDarkModeNotifier,
         ),
 
-        ChangeNotifierProvider<AnfrageService>(
-      create: (context) => AnfrageService(),
+        ChangeNotifierProvider<EventService>.value(
+          value: widget.eventService,
         ),
-        // 🆕 Sie können hier später weitere Provider hinzufügen z.B.:
-        // ChangeNotifierProvider<UserService>(create: (context) => UserService()),
-        // ChangeNotifierProvider<EventService>(create: (context) => EventService()),
+
+        ChangeNotifierProvider<FahrtService>.value(
+          value: widget.fahrtService,
+        ),
+
+        ChangeNotifierProvider<AnfrageService>.value(
+          value: widget.anfrageService,
+        ),
+
+        // ✅ ChatService korrekt per value
+        ChangeNotifierProvider<ChatService>.value(
+          value: widget.chatService,
+        ),
+        
+        Provider<RideRequestService>(
+          create: (_) => RideRequestService()
+          ),
+        
+        ChangeNotifierProvider<UiOverlayState>(
+          create: (_) => UiOverlayState(),
+        ),
+
       ],
+
       
-      // 🆕 BUILDER - DRITTER ÄNDERUNGSPUNKT
-      // Wir verwenden Builder um auf den Context der Provider zuzugreifen
       child: Builder(
         builder: (context) {
-          // 🆕 CONTEXT.WATCH() - VIERTER ÄNDERUNGSPUNKT
-          // Statt ValueListenableBuilder verwenden wir jetzt context.watch()
-          // um auf Dark Mode Änderungen zu reagieren
-          final isDarkMode = context.watch<bool>(); // Überwacht den Dark Mode Provider
-          
+          final isDarkMode = context.watch<bool>();
+
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             theme: ThemeData(
@@ -107,8 +181,8 @@ class _MyAppState extends State<MyApp> {
                 Theme.of(context).textTheme,
               ),
               colorSchemeSeed: Colors.blueAccent,
-              // 🟡 UNVERÄNDERT: Theme basiert weiterhin auf isDarkMode
-              brightness: isDarkMode ? Brightness.dark : Brightness.light,
+              brightness:
+                  isDarkMode ? Brightness.dark : Brightness.light,
             ),
             home: const WidgetTree(),
             localizationsDelegates: const [
