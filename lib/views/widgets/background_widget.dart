@@ -20,7 +20,6 @@ class AppBackground extends StatelessWidget {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   ),
-  backgroundBlendMode: BlendMode.overlay,
 ),
       child: child,
     );
