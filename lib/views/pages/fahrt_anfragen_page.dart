@@ -1,9 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:my_app/views/widgets/glass_page_widget.dart';
-import 'package:my_app/views/widgets/push_glass_widget.dart';
-import 'package:my_app/views/widgets/ui_overlay_state.dart';
 import 'package:provider/provider.dart';
 
 import 'package:my_app/data/fahrt_daten.dart';
@@ -26,46 +23,64 @@ class FahrtAnfragenPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassPage(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text("Anfragen zu deiner Fahrt"),
-      ),
-      body: Consumer<AnfrageService>(
-        builder: (context, anfrageService, _) {
-          final anfragen = anfrageService.getAnfragenForFahrt(fahrt.id);
+    return Stack(
+      children: [
+        AppBackground(child: Container()),
+        Container(color: Colors.black.withOpacity(0.4)),
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(color: Colors.transparent),
+        ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text("Anfragen zu deiner Fahrt"),
+          ),
+          body: Consumer<AnfrageService>(
+            builder: (context, anfrageService, _) {
+              final anfragen =
+                  anfrageService.getAnfragenForFahrt(fahrt.id);
 
-          if (anfragen.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    size: 64,
-                    color: Colors.white.withOpacity(0.6),
+              if (anfragen.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 64,
+                        color: Colors.white.withOpacity(0.6),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Noch keine Anfragen für diese Fahrt",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 18,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Noch keine Anfragen für diese Fahrt",
-                    style: TextStyle(color: Colors.white70, fontSize: 18),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
-          }
+                );
+              }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: anfragen.length,
-            itemBuilder: (context, index) {
-              return _AnfrageCard(anfrage: anfragen[index], fahrt: fahrt);
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: anfragen.length,
+                itemBuilder: (context, index) {
+                  return _AnfrageCard(
+                    anfrage: anfragen[index],
+                    fahrt: fahrt,
+                  );
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -112,11 +127,17 @@ class _AnfrageCardState extends State<_AnfrageCard> {
       seatsRequested: widget.anfrage.seatsRequested,
     );
 
+
     if (!mounted) return;
 
-    context.read<UiOverlayState>().openChat(
-      conversationId: convo.id,
-      otherUserName: widget.anfrage.requesterName,
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatPage(
+          conversationId: convo.id,
+          otherUserName: widget.anfrage.requesterName,
+        ),
+      ),
     );
   }
 

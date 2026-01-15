@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:my_app/data/fahrt_anfrage_service.dart';
 import 'package:my_app/data/fahrt_service.dart';
 import 'package:my_app/views/widgets/app_snackbar.dart';
-import 'package:my_app/views/widgets/ui_overlay_state.dart';
 import 'package:provider/provider.dart';
 
 import 'package:my_app/data/fahrt_daten.dart';
@@ -116,7 +115,13 @@ class FahrtenCard extends StatelessWidget {
                                   size: 30,
                                 ),
                                 onPressed: () {
-                                  context.read<UiOverlayState>().openFahrtAnfragen(fahrt);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          FahrtAnfragenPage(fahrt: fahrt),
+                                    ),
+                                  );
                                 },
                               ),
 
@@ -1053,4 +1058,3 @@ if (!success) {
       );
 }
 }
-

@@ -4,7 +4,6 @@ import 'package:hive/hive.dart';
 import 'package:my_app/data/event_daten.dart';
 import 'package:my_app/data/notifiers.dart';
 import 'package:my_app/views/widgets/background_widget.dart';
-import 'package:my_app/views/widgets/glass_page_widget.dart';
 import 'package:my_app/views/widgets/sizehelper_widget.dart';
 import 'package:my_app/views/widgets/suchleiste_widget.dart';
 import 'package:my_app/views/widgets/eventcard_widget.dart';
@@ -180,13 +179,15 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return GlassPage(
-  body: RefreshIndicator(
-    onRefresh: () async {
-      await reloadEvents();
-      controller.clear();
-      searchTextNotifier.value = '';
-    },
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await reloadEvents(); // ✅ Jetzt wird sie wirklich aufgerufen
+            controller.clear(); // ✅ Textfeld leeren
+            searchTextNotifier.value = ''; // ✅ Filter zurücksetzen
+          },
           child: ValueListenableBuilder<String>(
             valueListenable: searchTextNotifier,
             builder: (context, searchText, _) {
@@ -264,6 +265,7 @@ class _HomePageState extends State<HomePage> {
             },
           ),
         ),
-      );
+      ),
+    );
   }
 }

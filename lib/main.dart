@@ -20,7 +20,6 @@ import 'package:my_app/data/chat_repository.dart';
 // Hive
 import 'package:my_app/data/event_daten.dart';
 import 'package:my_app/data/user_service.dart';
-import 'package:my_app/views/widgets/ui_overlay_state.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:my_app/views/widget_tree.dart';
@@ -95,6 +94,9 @@ void main() async {
   );
   final chatService = ChatService(chatRepository);
 
+  // 🔹 Performance Optimierungen
+  debugPrint = (String? message, {int? wrapWidth}) {}; // Debug-Output in Release deaktivieren
+
   // App starten
   runApp(MyApp(
     eventService: eventService,
@@ -162,11 +164,6 @@ class _MyAppState extends State<MyApp> {
         Provider<RideRequestService>(
           create: (_) => RideRequestService()
           ),
-        
-        ChangeNotifierProvider<UiOverlayState>(
-          create: (_) => UiOverlayState(),
-        ),
-
       ],
 
       

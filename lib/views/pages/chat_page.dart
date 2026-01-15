@@ -69,70 +69,76 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-@override
-Widget build(BuildContext context) {
-  final chatService = context.watch<ChatService>();
-  final messages = chatService.getMessages(widget.conversationId);
+  @override
+  Widget build(BuildContext context) {
+    final chatService = context.watch<ChatService>();
+    final messages = chatService.getMessages(widget.conversationId);
 
-  final systemMessages = messages.where((m) => m.isSystem).toList();
-  final userMessages = messages.where((m) => !m.isSystem).toList();
+    final systemMessages = messages.where((m) => m.isSystem).toList();
+    final userMessages = messages.where((m) => !m.isSystem).toList();
 
-  return Scaffold(
-    backgroundColor: Colors.transparent,
-    body: Stack(
+    return Stack(
       children: [
-        Column(
-          children: [
-            Expanded(
-              child: ListView(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                children: [
-                  if (systemMessages.isNotEmpty) ...[
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 150),
-                      opacity: _showFullInfo ? 1 : 0,
-                      child: _buildSystemMessage(
-                        context,
-                        systemMessages.last,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+        AppBackground(child: Container()),
+        Container(color: Colors.black.withOpacity(0.4)),
 
-                  ...userMessages.map((msg) {
-                    final isMe = msg.senderId == _myUserId;
-                    return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.all(12),
-                        constraints:
-                            const BoxConstraints(maxWidth: 280),
-                        decoration: BoxDecoration(
-                          color: isMe
-                              ? Colors.blueAccent.withOpacity(0.85)
-                              : Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          msg.text,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: Text(widget.otherUserName),
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                  children: [
+                    /// 🔹 GROSSE INFO IM CHAT (NORMAL)
+                    if (systemMessages.isNotEmpty && _showFullInfo) ...[
+                      // Sanfte Transition ohne Flackern
+                      _buildSystemMessage(context, systemMessages.last),
+                      const SizedBox(height: 16),
+                    ],
+
+                    /// 🔹 CHAT NACHRICHTEN
+                    ...userMessages.map((msg) {
+                      final isMe = msg.senderId == _myUserId;
+                      return Align(
+                        alignment:
+                            isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.all(12),
+                          constraints:
+                              const BoxConstraints(maxWidth: 280),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? Colors.blueAccent.withOpacity(0.85)
+                                : Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            msg.text,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }),
-                ],
+                      );
+                    }),
+                  ],
+                ),
               ),
-            ),
-            _buildInput(context),
-          ],
-        ),
 
+              _buildInput(context),
+            ],
+          ),
+        ),
+        /// 🔹 MINI MITFAHR-INFO (LINKS OBEN, FIXIERT)
         if (systemMessages.isNotEmpty)
           Positioned(
             top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
@@ -144,11 +150,8 @@ Widget build(BuildContext context) {
             ),
           ),
       ],
-    ),
-  );
-}
-
-
+    );
+  }
 
   /// 🔹 SYSTEM NACHRICHT WIDGET (ohne unnötige Animationen die flackern)
   Widget _buildSystemMessage(BuildContext context, ChatMessage message) {

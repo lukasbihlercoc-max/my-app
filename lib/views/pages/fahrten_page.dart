@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/views/widgets/glass_page_widget.dart';
-import 'package:my_app/views/widgets/push_glass_widget.dart';
-import 'package:my_app/views/widgets/ui_overlay_state.dart';
 import 'package:provider/provider.dart';
 
 import 'package:my_app/data/fahrt_service.dart';
@@ -218,10 +215,18 @@ class _RequestedRideCard extends StatelessWidget {
 
     if (!context.mounted) return;
 
-   context.read<UiOverlayState>().openChat(
-      conversationId: conversation.id,
-      otherUserName: anfrage.requesterName,
+    if (!context.mounted) return;
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: true,
+        pageBuilder: (_, __, ___) => ChatPage(
+          conversationId: conversation.id,
+          otherUserName: anfrage.requesterName,
+        ),
+      ),
     );
+
   }
 
   @override
