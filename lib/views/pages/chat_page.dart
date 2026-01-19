@@ -32,6 +32,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _isScrolling = false;
 
   static const double _triggerOffset = 100;
+  static const double _systemBoxHeight = 220;
 
   @override
   void initState() {
@@ -70,88 +71,77 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final chatService = context.watch<ChatService>();
-    final messages = chatService.getMessages(widget.conversationId);
+Widget build(BuildContext context) {
+  final chatService = context.watch<ChatService>();
+  final messages = chatService.getMessages(widget.conversationId);
 
-    final systemMessages = messages.where((m) => m.isSystem).toList();
-    final userMessages = messages.where((m) => !m.isSystem).toList();
+  final systemMessages = messages.where((m) => m.isSystem).toList();
+  final userMessages = messages.where((m) => !m.isSystem).toList();
 
-    return Stack(
-      children: [
-        AppBackground(child: Container()),
-        Container(color: Colors.black.withOpacity(0.4)),
-
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            title: Text(widget.otherUserName),
-          ),
-          body: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                  children: [
-                    /// 🔹 GROSSE INFO IM CHAT (NORMAL)
-                    if (systemMessages.isNotEmpty && _showFullInfo) ...[
-                      // Sanfte Transition ohne Flackern
-                      _buildSystemMessage(context, systemMessages.last),
-                      const SizedBox(height: 16),
-                    ],
-
-                    /// 🔹 CHAT NACHRICHTEN
-                    ...userMessages.map((msg) {
-                      final isMe = msg.senderId == _myUserId;
-                      return Align(
-                        alignment:
-                            isMe ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.all(12),
-                          constraints:
-                              const BoxConstraints(maxWidth: 280),
-                          decoration: BoxDecoration(
-                            color: isMe
-                                ? Colors.blueAccent.withOpacity(0.85)
-                                : Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            msg.text,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                            ),
+    return AppBackground(
+  child: Stack(
+    children: [
+      Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.black.withOpacity(0.18),
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          title: Text(widget.otherUserName),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                controller: _scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                children: [
+                  if (systemMessages.isNotEmpty) ...[
+                        SizedBox(
+                          height: _systemBoxHeight,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            child: _showFullInfo
+                                ? _buildSystemMessage(
+                                    context,
+                                    systemMessages.last,
+                                  )
+                                : const SizedBox.shrink(),
                           ),
                         ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
 
-              _buildInput(context),
-            ],
+                        // ✅ SAUBERER ABSTAND ZU DEN NACHRICHTEN
+                        if (_showFullInfo) const SizedBox(height: 14),
+                      ],
+
+                  ...userMessages.map(
+                    (msg) => _buildMessageBubble(msg, _myUserId),
+                  ),
+                ],
+              ),
+            ),
+            _buildInput(context),
+          ],
+        ),
+      ),
+
+      /// ✅ MINI INFO – FIXIERT, ABER ANIMIERBAR
+      if (systemMessages.isNotEmpty)
+        Positioned(
+          top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+          left: 16,
+          child: _MiniRideInfo(
+            visible: _showMiniInfo,
+            onTap: () =>
+                _showInfoBottomSheet(context, systemMessages.last),
           ),
         ),
-        /// 🔹 MINI MITFAHR-INFO (LINKS OBEN, FIXIERT)
-        if (systemMessages.isNotEmpty)
-          Positioned(
-            top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
-            left: 16,
-            child: _MiniRideInfo(
-              visible: _showMiniInfo,
-              onTap: () =>
-                  _showInfoBottomSheet(context, systemMessages.last),
-            ),
-          ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   /// 🔹 SYSTEM NACHRICHT WIDGET (ohne unnötige Animationen die flackern)
   Widget _buildSystemMessage(BuildContext context, ChatMessage message) {
@@ -162,12 +152,19 @@ class _ChatPageState extends State<ChatPage> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.blueAccent.withOpacity(0.12),
+            color: const Color.fromARGB(239, 67, 132, 216).withOpacity(0.60),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.blueAccent.withOpacity(0.4),
+              color: const Color(0xFF3B82F6).withOpacity(0.6),
               width: 1.5,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,8 +262,8 @@ class _ChatPageState extends State<ChatPage> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color.fromARGB(168, 33, 33, 33)!.withOpacity(0.95),
-                  const Color.fromARGB(151, 0, 0, 0).withOpacity(0.98),
+                  Color(0xFF1F3A5F).withOpacity(0.98),
+                  Color(0xFF152B46).withOpacity(0.98),
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
@@ -325,10 +322,10 @@ class _ChatPageState extends State<ChatPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Colors.blueAccent.withOpacity(0.08),
+                    color: const Color(0xFF3E6FB5).withOpacity(0.22),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Colors.blueAccent.withOpacity(0.2),
+                      color: Colors.white.withOpacity(0.12),
                     ),
                   ),
                   child: Column(
@@ -373,7 +370,7 @@ class _ChatPageState extends State<ChatPage> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent.withOpacity(0.9),
+                      backgroundColor: const Color(0xFF3B82F6),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -424,17 +421,17 @@ class _MiniRideInfo extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.blueAccent.withOpacity(0.18),
+              color: const Color(0xFF3E6FB5), // 🔹 abgeleitet von großer Box
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: Colors.blueAccent.withOpacity(0.6),
-                width: 1.5,
+                color: const Color(0xFF3B82F6).withOpacity(0.55),
+                width: 1.2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 1,
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3), // 👈 nur nach unten
                 ),
               ],
             ),
@@ -470,3 +467,31 @@ class _MiniRideInfo extends StatelessWidget {
     );
   }
 }
+
+Widget _buildMessageBubble(ChatMessage msg, String myUserId) {
+  final isMe = msg.senderId == myUserId;
+
+  return Align(
+    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+    child: Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(maxWidth: 280),
+      decoration: BoxDecoration(
+        color: isMe
+            ? const Color(0xFF2F5ED6)
+            : const Color(0xFF3E5F96),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        msg.text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 15,
+          height: 1.35,
+        ),
+      ),
+    ),
+  );
+}
+

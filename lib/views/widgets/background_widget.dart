@@ -11,20 +11,23 @@ class AppBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-  gradient: const LinearGradient(
-    colors: [
-      Color.fromARGB(128, 255, 230, 200),
-      Color.fromARGB(201, 82, 161, 239),
-      Color.fromARGB(255, 64, 108, 251),
-    ],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  ),
-),
+        // Wir verwenden hier voll deckende Farben (Alpha 255), 
+        // um das Durchscheinen der vorherigen Seite während der Navigation zu verhindern.
+        gradient: const LinearGradient(
+          colors: [
+            Color.fromARGB(255, 237, 209, 175), // Opak gemacht (vorher 128)
+            Color.fromARGB(255, 82, 161, 239),  // Opak gemacht (vorher 201)
+            Color.fromARGB(255, 64, 108, 251),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: child,
     );
   }
 }
+
 
 
 /*Farb versuche:
