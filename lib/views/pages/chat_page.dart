@@ -32,7 +32,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _isScrolling = false;
 
   static const double _triggerOffset = 100;
-  static const double _systemBoxHeight = 220;
+  static const double _systemBoxHeight = 260;
 
   @override
   void initState() {
@@ -92,40 +92,46 @@ Widget build(BuildContext context) {
         body: Column(
           children: [
             Expanded(
-              child: ListView(
-                controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                children: [
-                  if (systemMessages.isNotEmpty) ...[
-                        SizedBox(
-                          height: _systemBoxHeight,
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 220),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            child: _showFullInfo
-                                ? _buildSystemMessage(
-                                    context,
-                                    systemMessages.last,
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                        ),
+  child: ListView.builder(
+    controller: _scrollController,
+    padding: EdgeInsets.fromLTRB(
+  16,
+  16 + (systemMessages.isNotEmpty ? _systemBoxHeight + 16 : 0),
+  16,
+  90,
+),
 
-                        // ✅ SAUBERER ABSTAND ZU DEN NACHRICHTEN
-                        if (_showFullInfo) const SizedBox(height: 14),
-                      ],
+    itemCount: userMessages.length,
+    itemBuilder: (context, index) {
+      return _buildMessageBubble(
+        userMessages[index],
+        _myUserId,
+      );
+    },
+  ),
+),
 
-                  ...userMessages.map(
-                    (msg) => _buildMessageBubble(msg, _myUserId),
-                  ),
-                ],
-              ),
-            ),
             _buildInput(context),
           ],
         ),
       ),
+if (systemMessages.isNotEmpty)
+  Positioned(
+    top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+    left: 16,
+    right: 16,
+    child: AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: _showFullInfo ? 1 : 0,
+      child: IgnorePointer(
+        ignoring: !_showFullInfo,
+        child: _buildSystemMessage(
+          context,
+          systemMessages.last,
+        ),
+      ),
+    ),
+  ),
 
       /// ✅ MINI INFO – FIXIERT, ABER ANIMIERBAR
       if (systemMessages.isNotEmpty)
@@ -145,57 +151,68 @@ Widget build(BuildContext context) {
 
   /// 🔹 SYSTEM NACHRICHT WIDGET (ohne unnötige Animationen die flackern)
   Widget _buildSystemMessage(BuildContext context, ChatMessage message) {
-    return GestureDetector(
-      onTap: () => _showInfoBottomSheet(context, message),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(239, 67, 132, 216).withOpacity(0.60),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF3B82F6).withOpacity(0.6),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
+    return Semantics(
+      container: true,
+      child: GestureDetector(
+        onTap: () => _showInfoBottomSheet(context, message),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(239, 67, 132, 216).withOpacity(0.60),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF3B82F6).withOpacity(0.6),
+                width: 1.5,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.car_rental, color: Colors.amber, size: 22),
-                  const SizedBox(width: 10),
-                  const Text(
-                    "Mitfahr-Info",
-                    style: TextStyle(
-                      color: Colors.amber,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.car_rental, color: Colors.amber, size: 22),
+                    const SizedBox(width: 10),
+                    const Text(
+                      "Mitfahr-Info",
+                      style: TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(Icons.chevron_right,
+                        color: Colors.amber.withOpacity(0.7)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ExcludeSemantics(
+                  child: RichText(
+                    textScaler: MediaQuery.of(
+                      context,
+                    ).textScaler, // 👈 DAS IST DER FIX
+                    text: TextSpan(
+                      text: message.text,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  Icon(Icons.chevron_right,
-                      color: Colors.amber.withOpacity(0.7)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                message.text,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  height: 1.4,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -212,6 +229,11 @@ Widget build(BuildContext context) {
           Expanded(
             child: TextField(
               controller: _controller,
+  keyboardType: TextInputType.multiline,
+  textInputAction: TextInputAction.newline,
+  autocorrect: false,
+  enableSuggestions: false,
+  spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: "Nachricht schreiben …",
@@ -410,56 +432,59 @@ class _MiniRideInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IgnorePointer(
-      ignoring: !visible,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
-        opacity: visible ? 1 : 0,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF3E6FB5), // 🔹 abgeleitet von großer Box
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: const Color(0xFF3B82F6).withOpacity(0.55),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.35),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3), // 👈 nur nach unten
+    return Semantics(
+      container: true,
+      child: IgnorePointer(
+        ignoring: !visible,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: visible ? 1 : 0,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3E6FB5), // 🔹 abgeleitet von großer Box
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: const Color(0xFF3B82F6).withOpacity(0.55),
+                  width: 1.2,
                 ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.car_rental,
-                  size: 18,
-                  color: Colors.amber,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  "Mitfahr-Info",
-                  style: TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    decoration: TextDecoration.none
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3), // 👈 nur nach unten
                   ),
-                ),
-                SizedBox(width: 4),
-                Icon(
-                  Icons.chevron_right,
-                  size: 18,
-                  color: Colors.amber,
-                ),
-              ],
+                ],
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.car_rental,
+                    size: 18,
+                    color: Colors.amber,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    "Mitfahr-Info",
+                    style: TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      decoration: TextDecoration.none
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: Colors.amber,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
